@@ -1,8 +1,5 @@
-from enum import unique
-from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
-
-db = SQLAlchemy()
+from src.models import db
 
 class School(db.Model):
    id = db.Column(db.Integer, primary_key=True)
