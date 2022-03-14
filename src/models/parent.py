@@ -8,10 +8,10 @@ class Parent(db.Model):
    password = db.Column(db.Text, nullable=False)
    parent_email = db.Column(db.String, unique=True, nullable=False)
    parent_phone = db.Column(db.String, unique=True, nullable=False)
-   # child = db.relationship('Child', backref='parent')
+   child = db.relationship('Child', backref='parent')
 
    # def __init__(self, first_name, last_name, username,) -> None:
    #    self.first_name = first_name
 
    def __repr__(self) -> str:
-      return f'Parent>>> Mr {self.last_name}'
+      return f'Parent>>> {self.last_name}'

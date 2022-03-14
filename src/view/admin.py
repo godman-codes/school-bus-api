@@ -6,6 +6,7 @@ import validators
 from src.constants.http_status_codes import HTTP_200_OK, HTTP_400_BAD_REQUEST
 from src.models.admin import School
 from src.models.parent import Parent
+from src.models.child import Child
 from src.models import db
 from src.helper.parentHelpers import create_parent_username
 
@@ -111,3 +112,37 @@ def register_parent():
       } 
          }), HTTP_200_OK
 
+@admin.post('/register_child')
+def register_child():
+   first_name = request.json['first_name']
+   last_name = request.json['last_name']
+   child_class = request.json['child_class']
+   child_parent = request.json['child_parent']
+
+   parent = Parent.query.filter_by(username=child_parent).first()
+   child = Child.query.filter_by(child_parent=parent.id, 
+                                 first_name=first_name, 
+                                 last_name=last_name).first()
+   if child:
+      return jsonify({'error': 'child already exists'}), HTTP_400_BAD_REQUEST
+
+   child = Child(
+      first_name=first_name,
+      last_name=last_name,
+      child_class=child_class,
+      child_parent=parent.id
+   )
+
+   
+   db.session.add(child)
+   db.session.commit()
+
+   return jsonify({
+      'message': 'child succesfully registered',
+      'child': {
+         'first_name': first_name,
+         'last_name': last_name,
+         'child_class': child_class,
+         'child_parent': f'{parent.last_name} {parent.first_name}'
+      }
+   }), HTTP_200_OK
