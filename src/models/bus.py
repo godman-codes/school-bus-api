@@ -1,5 +1,3 @@
-from email.policy import default
-from enum import unique
 from src.models import db
 
 class Bus(db.Model):
@@ -12,6 +10,7 @@ class Bus(db.Model):
    current_location = db.Column(db.Text, default='')
    initial_attendance = db.Column(db.Integer, default=0)
    is_active = db.Column(db.Boolean, default=False)
+   current_trip = db.relationship('Trip', backref='bus')
 
    def activate_bus(self):
       self.is_active = True
