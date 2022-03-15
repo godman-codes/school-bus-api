@@ -271,13 +271,13 @@ def search_parent():
    parent = request.json['parent']
 
    if parent == '':
-      return jsonify({'error': 'enter a parents name pls'})
+      return jsonify({'error': 'enter a search name pls'}), HTTP_400_BAD_REQUEST
    
    all_valid_parent = standard_query(parent, Parent)
    dict_parents = {}
+   size = 0
    for parent in all_valid_parent:
-      i = 0
-      dict_parents[f'parent-{i}'] = {
+      dict_parents[f'parent-{size}'] = {
          'parent_id': parent.id,
          'parent_first_name': parent.first_name,
          'parent_last_name': parent.last_name,
@@ -286,9 +286,57 @@ def search_parent():
          'parent_phone': parent.parent_phone,
          'children': [[x.id, x.first_name, x.last_name] for x in Child.query.filter_by(child_parent=parent.id).all()]
       }
+      size =+ 1
    return jsonify({
       'message': 'search successfull',
       'parents': dict_parents
    }), HTTP_200_OK
-   
-   
+
+@admin.post('/search_driver')
+def search_driver():
+   driver = request.json['driver']
+
+   if driver == '':
+      return jsonify({'error': 'enter a search name pls'}), HTTP_400_BAD_REQUEST
+
+   all_valid_driver = standard_query(driver, Driver)
+   dict_drivers = {}
+   size = 0
+   for driver in all_valid_driver:
+      dict_drivers[f'driver-{size}'] = {
+         'driver_id': driver.id,
+         'driver_first_name': driver.first_name,
+         'driver_last_name': driver.last_name,
+         'driver_email': driver.driver_email,
+         'driver_username_id': driver.driver_id,
+         'driver_phone': driver.driver_phone,
+      }
+      size =+ 1
+   return jsonify({
+      'message': 'search succesfull',
+      'drivers': dict_drivers
+   }), HTTP_200_OK
+
+
+@admin.post('/search_children')
+def search_children():
+   child = request.json['child_name']
+
+   if child == '':
+      return jsonify({'error': 'enter a search name'}), HTTP_400_BAD_REQUEST
+
+   all_valid_children = standard_query(child, Child)
+   dict_child = {}
+   size = 0
+   for child in all_valid_children:
+      dict_child[f'child-{size}'] = {
+         'child_id': child.id,
+         'child_first_name': child.first_name,
+         'child_last_name': child.last_name,
+         'child_parent': [[x.id, x.first_name, x.last_name] for x in Parent.query.filter_by(id=child.child_parent).all()]
+      }
+   size =+ 1
+   return jsonify({
+      'message': 'search succesfull',
+      'child': dict_child
+   }), HTTP_200_OK
