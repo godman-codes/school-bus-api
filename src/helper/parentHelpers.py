@@ -19,7 +19,6 @@ def standard_query_helper(array, full_word):
          new_elements.append(element)
       if f'{element.last_name} {element.first_name}'.startswith(full_word):
          new_elements.append(element)
-   print(new_elements)
    return new_elements
          
          
@@ -28,7 +27,6 @@ def standard_query_helper(array, full_word):
 def standard_query(word, class__):
    "queries the database for columns of a class that start with word"
    class_title = class__.query.all()
-   print(class_title)
    all_valid_elements = standard_query_helper(class_title, word)
    return all_valid_elements
    
