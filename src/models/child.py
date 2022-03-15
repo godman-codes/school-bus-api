@@ -1,4 +1,4 @@
-from src.models import db, parent
+from src.models import db
 
 class Child(db.Model):
    id = db.Column(db.Integer, primary_key=True)
