@@ -1,13 +1,14 @@
 from flask import Blueprint, jsonify, request
 from werkzeug.security import check_password_hash, generate_password_hash
 import validators
-from src.constants.http_status_codes import HTTP_200_OK, HTTP_400_BAD_REQUEST
+from src.constants.http_status_codes import HTTP_200_OK, HTTP_302_FOUND, HTTP_400_BAD_REQUEST, HTTP_404_NOT_FOUND
 from src.models.admin import School
 from src.models.parent import Parent
 from src.models.child import Child
 from src.models.driver import Driver
+from src.models.bus import Bus
 from src.models import db
-from src.helper.parentHelpers import create_username, phoneNumberConverter, standard_query
+from src.helper.parentHelpers import create_username, phoneNumberConverter, standard_query, standard_query_bus
 
 admin = Blueprint('admin', __name__, url_prefix="/api/v1/admin")
 
@@ -86,7 +87,7 @@ def register_parent():
    password = request.json['password']
    parent_email = request.json['parent_email']
    parent_phone = request.json['parent_phone']
-   username = create_username(last_name)
+   username = create_username(last_name, Parent)
 
    if not first_name or len(first_name) < 2:
       return jsonify({'error': 'Enter a valid First Name'}), HTTP_400_BAD_REQUEST      
@@ -190,7 +191,7 @@ def register_child():
    db.session.commit()
 
    return jsonify({
-      'message': 'child succesfully registered',
+      'message': 'child successfully registered',
       'child': {
          'first_name': first_name,
          'last_name': last_name,
@@ -204,7 +205,7 @@ def register_child():
 def register_driver():
    first_name = request.json['first_name']
    last_name = request.json['last_name']
-   driver_id = create_username(last_name)
+   driver_id = create_username(last_name, Driver)
    password = request.json['password']
    driver_email = request.json['driver_email']
    driver_phone = request.json['driver_phone']
@@ -256,7 +257,7 @@ def register_driver():
    db.session.commit()
 
    return jsonify({
-      'message': 'driver succesfully registered',
+      'message': 'driver successfully registered',
       'driver': {
          'first_name': first_name,
          'last_name': last_name,
@@ -264,6 +265,61 @@ def register_driver():
          'driver_email': driver_email,
          'driver_phone': driver_phone
          }
+   }), HTTP_200_OK
+
+
+@admin.post('/register_bus')
+def register_bus():
+   bus_name = request.json['bus_name']
+   bus_id = create_username(bus_name[:2], Bus)
+   plate_number = request.json['plate_number']
+   capacity = request.json['capacity']
+   driver = request.json['driver']
+
+   if not bus_id or len(bus_id) < 3:
+      return jsonify({'error': 'Enter a valid Bus id'}), HTTP_400_BAD_REQUEST
+
+   if not bus_name or len(bus_name) < 2:
+      return jsonify({'error': 'Enter a valid Bus Name'}), HTTP_400_BAD_REQUEST
+
+   if not capacity or int(capacity) != capacity:
+      return jsonify({'error': 'error enter a valid capacity'}), HTTP_400_BAD_REQUEST
+
+   if len(plate_number) != 8:
+      return jsonify({'error': 'enter a valid plate_number'}), HTTP_400_BAD_REQUEST
+
+   if Bus.query.filter_by(plate_number=plate_number).first() is not None:
+      return jsonify({'error': 'Plate Number already exist'}), HTTP_400_BAD_REQUEST
+
+   if Bus.query.filter_by(bus_driver=driver).first() is not None:
+      return jsonify({'error': 'Driver already assigned to another bus'}), HTTP_400_BAD_REQUEST
+   
+   driver = Driver.query.filter_by(driver_id=driver).first()
+   
+   if driver is None:
+      return jsonify({'error': 'driver does not exist'}), HTTP_400_BAD_REQUEST
+   print('man')
+
+   bus = Bus(
+      bus_name=bus_name,
+      plate_number=plate_number,
+      bus_id=bus_id,
+      capacity=capacity,
+      bus_driver=driver.id
+   )
+
+   db.session.add(bus)
+   db.session.commit()
+
+   return jsonify({
+      'message': 'child successfully registered',
+      'bus': {
+         'bus_name': bus_name,
+         'plate_number': plate_number,
+         'bus_id': bus_id,
+         'capacity': capacity,
+         'driver': f'{driver.last_name} {driver.first_name}'
+      }
    }), HTTP_200_OK
 
 @admin.post('/search_parent')
@@ -313,7 +369,7 @@ def search_driver():
       }
       size =+ 1
    return jsonify({
-      'message': 'search succesfull',
+      'message': 'search successful',
       'drivers': dict_drivers
    }), HTTP_200_OK
 
@@ -337,6 +393,41 @@ def search_children():
       }
    size =+ 1
    return jsonify({
-      'message': 'search succesfull',
+      'message': 'search successful',
       'child': dict_child
    }), HTTP_200_OK
+
+@admin.post('/search_bus')
+def search_bus():
+   bus = request.json['bus']
+
+   if bus == '':
+      return jsonify({'error': 'enter a search name'}), HTTP_400_BAD_REQUEST
+
+   all_valid_bus = standard_query_bus(bus, Bus)
+   dict_bus = {}
+
+   
+
+
+   size = 0
+   for bus in all_valid_bus:
+      dict_bus[f'bus-{size}'] = {
+         'bus_id': bus.id,
+         'bus_name': bus.bus_name,
+         'bus_plate_number': bus.plate_number,
+         'bus_capacity': bus.capacity,
+         'current_location': bus.current_location,
+         'initial_attendance': bus.initial_attendance,
+         'bus_is_active': bus.is_active,
+         'bus_driver': [[x.id, x.first_name, x.last_name] for x in Driver.query.filter_by(id=bus.bus_driver).all()]
+      }
+   size =+ 1
+
+   if dict_bus == {}:
+      return jsonify({'error': 'no results found'}), HTTP_404_NOT_FOUND
+
+   return jsonify({
+      'message': 'search successful',
+      'buses': dict_bus
+      }), HTTP_302_FOUND
