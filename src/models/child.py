@@ -1,4 +1,5 @@
 from src.models import db
+from src.models.routes import Routes
 
 class Child(db.Model):
    id = db.Column(db.Integer, primary_key=True)
@@ -6,6 +7,7 @@ class Child(db.Model):
    last_name = db.Column(db.String(12), nullable=False)
    child_class = db.Column(db.String(12), nullable=False)
    child_parent = db.Column(db.Integer, db.ForeignKey('parent.id'))
+   child_routes = db.Column(db.Integer, db.ForeignKey(Routes.id))
 
    def __repr__(self) -> str:
       return f'Child>>> {self.first_name}'

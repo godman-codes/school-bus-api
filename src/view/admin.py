@@ -9,6 +9,7 @@ from src.models.driver import Driver
 from src.models.bus import Bus
 from src.models import db
 from src.helper.parentHelpers import create_username, phoneNumberConverter, standard_query, standard_query_bus
+from src.models.routes import Routes
 
 admin = Blueprint('admin', __name__, url_prefix="/api/v1/admin")
 
@@ -154,6 +155,7 @@ def register_child():
    last_name = request.json['last_name']
    child_class = request.json['child_class']
    child_parent = request.json['child_parent']
+   child_routes = request.json['child_routes']
 
 
    if not first_name or len(first_name) < 2:
@@ -165,13 +167,20 @@ def register_child():
    if not child_parent or len(child_parent) < 2:
       return jsonify({'error': 'Enter a valid parent username'}), HTTP_400_BAD_REQUEST
    
+   if not child_routes or len(child_routes) < 1:
+      return jsonify({'error': 'please enter the valid child routes'}), HTTP_400_BAD_REQUEST
+   
    if not child_class or len(child_class) < 2:
       return jsonify({'error': 'Enter the valid child class'}), HTTP_400_BAD_REQUEST  
    
    parent = Parent.query.filter_by(username=child_parent).first()
+   routes = Routes.query.filter_by(id=child_routes).first()
 
    if parent is None:
       return jsonify({'error': 'username belongs to no parent'})
+
+   if routes is None:
+      return jsonify({'error': 'Route does not exist'})
    
    child = Child.query.filter_by(child_parent=parent.id, 
                                  first_name=first_name, 
@@ -183,7 +192,8 @@ def register_child():
       first_name=first_name,
       last_name=last_name,
       child_class=child_class,
-      child_parent=parent.id
+      child_parent=parent.id,
+      child_routes=routes.id
    )
 
    
@@ -196,7 +206,8 @@ def register_child():
          'first_name': first_name,
          'last_name': last_name,
          'child_class': child_class,
-         'child_parent': f'{parent.last_name} {parent.first_name}'
+         'child_parent': f'{parent.last_name} {parent.first_name}',
+         'child_route': f'Routes {routes.id}'
       }
    }), HTTP_200_OK
 
@@ -431,3 +442,34 @@ def search_bus():
       'message': 'search successful',
       'buses': dict_bus
       }), HTTP_302_FOUND
+
+@admin.post('/register_routes')
+def register_routes():
+   routes_path = request.json['routes_path']
+   expected_time = request.json['expected_time']
+
+   if not routes_path or len(routes_path) < 2:
+      return jsonify({'error': 'Enter a valid Route'}), HTTP_400_BAD_REQUEST
+
+   if not expected_time or len(expected_time) < 2:
+      return jsonify({'error': 'Enter a valid Time'}), HTTP_400_BAD_REQUEST
+
+   if Routes.query.filter_by(routes_path=routes_path).first() is not None:
+      return jsonify({'error': 'This route already exists'}), HTTP_400_BAD_REQUEST
+
+   routes = Routes(
+      routes_path=routes_path,
+      expected_time=expected_time
+   )
+
+   db.session.add(routes)
+   db.session.commit()
+
+   return jsonify({
+      'message': 'Route successfully registered',
+      'routes': {
+         'routes_path': routes_path,
+         'expected_time': expected_time
+      }
+   }), HTTP_200_OK
+   
