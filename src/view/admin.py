@@ -10,6 +10,7 @@ from src.models.bus import Bus
 from src.models import db
 from src.helper.parentHelpers import create_username, phoneNumberConverter, standard_query, standard_query_bus
 from src.models.routes import Routes
+from src.models.trip import Trip
 
 admin = Blueprint('admin', __name__, url_prefix="/api/v1/admin")
 
@@ -472,4 +473,42 @@ def register_routes():
          'expected_time': expected_time
       }
    }), HTTP_200_OK
-   
+
+@admin.post('/register_trip')
+def register_trip():
+   routes = request.json['routes']
+   bus_id = request.json['bus_id']
+
+   if not routes or len(routes) < 1:
+      return jsonify({'error': 'enter a valid route'}), HTTP_400_BAD_REQUEST
+
+   if not bus_id or len(bus_id) < 1:
+      return jsonify({'error': 'enter a valid bus id'}), HTTP_400_BAD_REQUEST
+
+   route = Routes.query.filter_by(id=routes).first()
+   if route is None:
+      return jsonify({'error': 'this route does not exist pls enter valid routes'}), HTTP_400_BAD_REQUEST
+
+   bus = Bus.query.filter_by(bus_id=bus_id).first()
+   if bus is None:
+      return jsonify({'error': 'This bus noes not exist'}), HTTP_400_BAD_REQUEST
+
+   trip = Trip(
+      routes=routes,
+      bus_id=bus_id,
+      start_timestamp='',
+      end_timestamp='',
+      latest_gps ='',
+      last_update_timestamp='',
+   )
+
+   db.session.add(trip)
+   db.session.commit()
+
+   return jsonify({
+      'message': 'trip initiated successfully',
+      'trip': {
+         'routes': f'Route {routes}',
+         'bus_id': bus_id,
+      }
+   }), HTTP_200_OK

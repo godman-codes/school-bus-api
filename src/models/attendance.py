@@ -26,4 +26,4 @@ class Attendance(db.Model):
       db.session.commit()
 
    def __repr__(self) -> str:
-      return f'Attendance of {child_id}'
+      return f'Attendance of {self.child_id}'

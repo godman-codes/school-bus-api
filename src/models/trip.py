@@ -7,10 +7,10 @@ class Trip(db.Model):
    id = db.Column(db.Integer, primary_key=True)
    routes = db.Column(db.Integer, db.ForeignKey(Routes.id))
    date = db.Column(db.DateTime, default=datetime.now())
-   start_timestamp = db.Column(db.DateTime)
-   end_timestamp = db.Column(db.DateTime)
-   latest_gps = db.Column(db.Text)
-   last_update_timestamp = db.Column(db.DateTime)
+   start_timestamp = db.Column(db.DateTime, default='')
+   end_timestamp = db.Column(db.DateTime, default='')
+   latest_gps = db.Column(db.Text, default='')
+   last_update_timestamp = db.Column(db.DateTime, default='')
    bus_id = db.Column(db.Integer, db.ForeignKey(Bus.id))
 
    def start_timestamp(self):
