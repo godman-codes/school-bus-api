@@ -493,13 +493,10 @@ def register_trip():
    if bus is None:
       return jsonify({'error': 'This bus noes not exist'}), HTTP_400_BAD_REQUEST
 
+
    trip = Trip(
       routes=routes,
-      bus_id=bus_id,
-      start_timestamp='',
-      end_timestamp='',
-      latest_gps ='',
-      last_update_timestamp='',
+      bus_id=bus_id
    )
 
    db.session.add(trip)
@@ -510,5 +507,6 @@ def register_trip():
       'trip': {
          'routes': f'Route {routes}',
          'bus_id': bus_id,
+         'date': trip.date
       }
    }), HTTP_200_OK

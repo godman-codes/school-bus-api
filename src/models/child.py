@@ -8,8 +8,8 @@ class Child(db.Model):
    child_class = db.Column(db.String(12), nullable=False)
    child_parent = db.Column(db.Integer, db.ForeignKey('parent.id'))
    child_routes = db.Column(db.Integer, db.ForeignKey(Routes.id))
-   notifications = db.relationship('Notification', backref='child')
-   attendance = db.relationship('Attendance', backref='child')
+   # notifications = db.relationship('Notification', backref='child_notifications')
+   # attendance = db.relationship('Attendance', backref='child_attendace')
 
    def __repr__(self) -> str:
       return f'Child>>> {self.first_name}'

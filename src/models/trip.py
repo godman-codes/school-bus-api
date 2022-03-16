@@ -7,25 +7,25 @@ class Trip(db.Model):
    id = db.Column(db.Integer, primary_key=True)
    routes = db.Column(db.Integer, db.ForeignKey(Routes.id))
    date = db.Column(db.DateTime, default=datetime.now())
-   start_timestamp = db.Column(db.DateTime, default='')
-   end_timestamp = db.Column(db.DateTime, default='')
-   latest_gps = db.Column(db.Text, default='')
-   last_update_timestamp = db.Column(db.DateTime, default='')
+   start_timestamp = db.Column(db.DateTime, nullable=True,)
+   end_timestamp = db.Column(db.DateTime, nullable=True)
+   latest_gps = db.Column(db.Text, nullable=True)
+   last_update_timestamp = db.Column(db.DateTime, nullable=True)
    bus_id = db.Column(db.Integer, db.ForeignKey(Bus.id))
 
-   def start_timestamp(self):
+   def start_timestamps(self):
       self.start_timestamp = datetime.now()
       db.session.commit()
 
-   def end_timestamp(self):
+   def end_timestamps(self):
       self.end_timestamp = datetime.now()
       db.session.commit()
 
-   def latest_gps(self, gps):
+   def get_latest_gps(self, gps):
       self.latest_gps = gps
       db.session.commit()
       
-   def last_update_timestamp(self):
+   def get_last_update_timestamp(self):
       self.last_update_timestamp = datetime.now()
       db.session.commit()
 
