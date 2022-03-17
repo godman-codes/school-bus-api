@@ -1,9 +1,10 @@
-from src.constants.http_status_codes import HTTP_200_OK, HTTP_400_BAD_REQUEST
+from src.constants.http_status_codes import HTTP_200_OK, HTTP_400_BAD_REQUEST, HTTP_401_UNAUTHORIZED
 from flask import Blueprint, jsonify, request
 import validators
 from src.models.admin import School
 from werkzeug.security import check_password_hash, generate_password_hash
 from src.models import db
+from flask_jwt_extended import create_access_token, create_refresh_token, jwt_required, get_jwt_identity
 
 admin = Blueprint('admin', __name__, url_prefix="/api/v1/admin")
 
@@ -75,3 +76,56 @@ def register():
                      'school_website': school_website
                   }
                   }), HTTP_200_OK
+
+
+@admin.post('/login_admin')
+def login_admin():
+   school_admin_id = request.json['admin_id']
+   password = request.json['password']
+
+   user = School.query.filter_by(school_admin_id=school_admin_id).first()
+
+   if user:
+      is_pass_correct = check_password_hash(user.school_admin_password, password)
+      if is_pass_correct:
+         refresh = create_refresh_token(identity=user.id)
+         access = create_access_token(identity=user.id)
+
+         return jsonify({
+            'message': 'login successfull',
+            'admin':{
+               'refresh': refresh,
+               'access': access,
+               'school_name': user.school_name,
+               'school_location': user.school_location,
+               'school_email': user.school_email,
+               'school_website': user.school_website
+            }
+         }), HTTP_200_OK
+
+   return jsonify({'error': 'Wrong credentials'}), HTTP_401_UNAUTHORIZED
+
+@admin.get("/admin_details")
+@jwt_required()
+def admin_details():
+   user_id = get_jwt_identity()
+   user = School.query.filter_by(id=user_id).first()
+   return jsonify({
+      'user': {
+         'school_name': user.school_name,
+         'school_location': user.school_location,
+         'school_email': user.school_email,
+         'school_website': user.school_website
+         }
+   }), HTTP_200_OK
+
+
+@admin.get('/token/refresh')
+@jwt_required(refresh=True)
+def refresh_users_token():
+   identity = get_jwt_identity()
+   access = create_access_token(identity=identity)
+   return jsonify({
+      'access': access
+   }), HTTP_200_OK
+   

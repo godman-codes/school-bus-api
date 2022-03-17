@@ -11,10 +11,11 @@ from src.models import db
 from src.helper.parentHelpers import create_username, phoneNumberConverter, standard_query, standard_query_bus
 from src.models.routes import Routes
 from src.models.trip import Trip
-
+from flask_jwt_extended import get_jwt_identity, jwt_required
 
 @admin.post('/register_parent')
-def register_parent():
+@jwt_required()
+def register_parent():   
    first_name = request.json['first_name']
    last_name = request.json['last_name']
    password = request.json['password']
@@ -82,6 +83,7 @@ def register_parent():
          }), HTTP_200_OK
 
 @admin.post('/register_child')
+@jwt_required()
 def register_child():
    first_name = request.json['first_name']
    last_name = request.json['last_name']
@@ -145,6 +147,7 @@ def register_child():
 
 
 @admin.post('/register_driver')
+@jwt_required()
 def register_driver():
    first_name = request.json['first_name']
    last_name = request.json['last_name']
@@ -212,6 +215,7 @@ def register_driver():
 
 
 @admin.post('/register_bus')
+@jwt_required()
 def register_bus():
    bus_name = request.json['bus_name']
    bus_id = create_username(bus_name[:2], Bus)
@@ -266,6 +270,7 @@ def register_bus():
    }), HTTP_200_OK
 
 @admin.post('/search_parent')
+@jwt_required()
 def search_parent():
    parent = request.json['parent']
 
@@ -292,6 +297,7 @@ def search_parent():
    }), HTTP_200_OK
 
 @admin.post('/search_driver')
+@jwt_required()
 def search_driver():
    driver = request.json['driver']
 
@@ -318,6 +324,7 @@ def search_driver():
 
 
 @admin.post('/search_children')
+@jwt_required()
 def search_children():
    child = request.json['child_name']
 
@@ -341,6 +348,7 @@ def search_children():
    }), HTTP_200_OK
 
 @admin.post('/search_bus')
+@jwt_required()
 def search_bus():
    bus = request.json['bus']
 
@@ -376,6 +384,7 @@ def search_bus():
       }), HTTP_302_FOUND
 
 @admin.post('/register_routes')
+@jwt_required()
 def register_routes():
    routes_path = request.json['routes_path']
    expected_time = request.json['expected_time']
@@ -406,6 +415,7 @@ def register_routes():
    }), HTTP_200_OK
 
 @admin.post('/register_trip')
+@jwt_required()
 def register_trip():
    routes = request.json['routes']
    bus_id = request.json['bus_id']

@@ -2,6 +2,7 @@ from flask import Flask
 import os
 from src.models import db
 from src.view.admin import admin
+from flask_jwt_extended import JWTManager
 
 
 
@@ -22,6 +23,7 @@ def create_app(test_config=None):
    
    db.app=app
    db.init_app(app)
+   JWTManager(app)
    app.register_blueprint(admin)
 
 
