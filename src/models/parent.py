@@ -1,4 +1,5 @@
 from src.models import db
+from src.models.child import Child
 
 class Parent(db.Model):
    id = db.Column(db.Integer, primary_key=True)
@@ -8,7 +9,7 @@ class Parent(db.Model):
    password = db.Column(db.Text, nullable=False)
    parent_email = db.Column(db.String, unique=True, nullable=False)
    parent_phone = db.Column(db.String, unique=True, nullable=False)
-   child = db.relationship('Child', backref='parent')
+   child = db.relationship(Child , backref='parent_child')
 
    # def __init__(self, first_name, last_name, username,) -> None:
    #    self.first_name = first_name

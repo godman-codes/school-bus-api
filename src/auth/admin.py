@@ -1,4 +1,4 @@
-from src.constants.http_status_codes import HTTP_200_OK, HTTP_400_BAD_REQUEST, HTTP_401_UNAUTHORIZED
+from src.constants.http_status_codes import HTTP_200_OK, HTTP_201_CREATED, HTTP_400_BAD_REQUEST, HTTP_401_UNAUTHORIZED
 from flask import Blueprint, jsonify, request
 import validators
 from src.models.admin import School
@@ -10,7 +10,7 @@ admin = Blueprint('admin', __name__, url_prefix="/api/v1/admin")
 
 
 @admin.post('/register_school')
-def register():
+def register_school():
 
    school_name = request.json['school_name']
    school_location = request.json['school_location']
@@ -75,7 +75,7 @@ def register():
                      'school_email': school_email,
                      'school_website': school_website
                   }
-                  }), HTTP_200_OK
+                  }), HTTP_201_CREATED
 
 
 @admin.post('/login_admin')

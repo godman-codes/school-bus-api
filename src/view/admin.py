@@ -1,8 +1,7 @@
-from src.auth.admin import admin
 from flask import jsonify, request
 from werkzeug.security import generate_password_hash
 import validators
-from src.constants.http_status_codes import HTTP_200_OK, HTTP_302_FOUND, HTTP_400_BAD_REQUEST, HTTP_404_NOT_FOUND
+from src.constants.http_status_codes import HTTP_200_OK, HTTP_201_CREATED, HTTP_302_FOUND, HTTP_400_BAD_REQUEST, HTTP_404_NOT_FOUND
 from src.models.parent import Parent
 from src.models.child import Child
 from src.models.driver import Driver
@@ -12,6 +11,7 @@ from src.helper.parentHelpers import create_username, phoneNumberConverter, stan
 from src.models.routes import Routes
 from src.models.trip import Trip
 from flask_jwt_extended import get_jwt_identity, jwt_required
+from src.auth.admin import admin
 
 @admin.post('/register_parent')
 @jwt_required()
@@ -80,7 +80,7 @@ def register_parent():
          'parent_phone': parent_phone,
          'username': username
       } 
-         }), HTTP_200_OK
+         }), HTTP_201_CREATED
 
 @admin.post('/register_child')
 @jwt_required()
@@ -143,7 +143,7 @@ def register_child():
          'child_parent': f'{parent.last_name} {parent.first_name}',
          'child_route': f'Routes {routes.id}'
       }
-   }), HTTP_200_OK
+   }), HTTP_201_CREATED
 
 
 @admin.post('/register_driver')
@@ -211,7 +211,7 @@ def register_driver():
          'driver_email': driver_email,
          'driver_phone': driver_phone
          }
-   }), HTTP_200_OK
+   }), HTTP_201_CREATED
 
 
 @admin.post('/register_bus')
@@ -267,7 +267,7 @@ def register_bus():
          'capacity': capacity,
          'driver': f'{driver.last_name} {driver.first_name}'
       }
-   }), HTTP_200_OK
+   }), HTTP_201_CREATED
 
 @admin.post('/search_parent')
 @jwt_required()
@@ -294,7 +294,7 @@ def search_parent():
    return jsonify({
       'message': 'search successfull',
       'parents': dict_parents
-   }), HTTP_200_OK
+   }), HTTP_302_FOUND
 
 @admin.post('/search_driver')
 @jwt_required()
@@ -320,7 +320,7 @@ def search_driver():
    return jsonify({
       'message': 'search successful',
       'drivers': dict_drivers
-   }), HTTP_200_OK
+   }), HTTP_302_FOUND
 
 
 @admin.post('/search_children')
@@ -345,7 +345,7 @@ def search_children():
    return jsonify({
       'message': 'search successful',
       'child': dict_child
-   }), HTTP_200_OK
+   }), HTTP_302_FOUND
 
 @admin.post('/search_bus')
 @jwt_required()
@@ -412,7 +412,7 @@ def register_routes():
          'routes_path': routes_path,
          'expected_time': expected_time
       }
-   }), HTTP_200_OK
+   }), HTTP_201_CREATED
 
 @admin.post('/register_trip')
 @jwt_required()
@@ -450,4 +450,4 @@ def register_trip():
          'bus_id': bus_id,
          'date': trip.date
       }
-   }), HTTP_200_OK
+   }), HTTP_201_CREATED
