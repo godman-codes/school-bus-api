@@ -3,6 +3,7 @@ from flask_jwt_extended import jwt_required, get_jwt_identity, create_access_tok
 from werkzeug.security import check_password_hash
 from src.models.driver import Driver
 from src.constants.http_status_codes import HTTP_302_FOUND, HTTP_404_NOT_FOUND, HTTP_200_OK, HTTP_401_UNAUTHORIZED
+from src.models.routes import Routes
 from src.models.trip import Trip
 from src.models.bus import Bus
 
@@ -84,3 +85,34 @@ def get_trips():
          'last_update_timestamp': trips.last_update_timestamp
             }
          })
+
+
+@driver.get("/driver_detail")
+@jwt_required()
+def driver_details():
+   driver_id = get_jwt_identity()
+   driver = Driver.query.filter_by(id=driver_id).first()
+   driver_bus = Bus.query.filter_by(bus_driver=driver_id).first()
+   driver_trip = Trip.query.filter_by(bus_id=driver_bus.bus_id).all()
+   return jsonify({
+      'driver': {
+         'driver_first_name': driver.first_name,
+         'driver_last_name': driver.last_name,
+         'driver_id': driver.driver_id,
+         'driver_email': driver.driver_email,
+         'driver_phone': driver.driver_phone,
+         'bus': [[x.id, x.bus_name, x.bus_plate_number] for x in driver_bus],
+         'trips': [[x.id, x.routes, x.bus_id, x.date] for x in driver_trip]
+         }
+   }), HTTP_200_OK
+
+
+@driver.get('/token/refresh')
+@jwt_required(refresh=True)
+def refresh_users_token():
+   identity = get_jwt_identity()
+   access = create_access_token(identity=identity)
+   return jsonify({
+      'access': access
+   }), HTTP_200_OK
+   

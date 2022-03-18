@@ -70,6 +70,7 @@ def register_parent():
 
    db.session.add(parent)
    db.session.commit()
+   parent_kid_help = Parent.query.filter_by(parent_phone=parent_phone, parent_email=parent_email).all
 
    return jsonify({
       'message': f'Successfully added {last_name} {first_name}',
@@ -79,7 +80,8 @@ def register_parent():
          'password': password,
          'parent_email': parent_email,
          'parent_phone': parent_phone,
-         'username': username
+         'username': username,
+         'parent_child': [[x.id, x.first_name, x.last_name] for x in Child.query.filter_by(child_parent=parent_kid_help.id).all()]
       } 
          }), HTTP_201_CREATED
 
