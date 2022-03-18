@@ -6,10 +6,9 @@ from werkzeug.security import check_password_hash, generate_password_hash
 from src.models import db
 from flask_jwt_extended import create_access_token, create_refresh_token, jwt_required, get_jwt_identity
 
-admin = Blueprint('admin', __name__, url_prefix="/api/v1/admin")
+admin_auth = Blueprint('admin_auth', __name__, url_prefix="/api/v1/admin_auth")
 
-
-@admin.post('/register_school')
+@admin_auth.post('/register_school')
 def register_school():
 
    school_name = request.json['school_name']
@@ -78,7 +77,7 @@ def register_school():
                   }), HTTP_201_CREATED
 
 
-@admin.post('/login_admin')
+@admin_auth.post('/login_admin')
 def login_admin():
    school_admin_id = request.json['admin_id']
    password = request.json['password']
@@ -105,7 +104,7 @@ def login_admin():
 
    return jsonify({'error': 'Wrong credentials'}), HTTP_401_UNAUTHORIZED
 
-@admin.get("/admin_details")
+@admin_auth.get("/admin_details")
 @jwt_required()
 def admin_details():
    user_id = get_jwt_identity()
@@ -120,7 +119,7 @@ def admin_details():
    }), HTTP_200_OK
 
 
-@admin.get('/token/refresh')
+@admin_auth.get('/token/refresh')
 @jwt_required(refresh=True)
 def refresh_users_token():
    identity = get_jwt_identity()

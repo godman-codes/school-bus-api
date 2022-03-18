@@ -1,8 +1,10 @@
 from flask import Flask
 import os
 from src.models import db
-from src.auth.admin import admin
+from src.auth.admin_auth import admin_auth
+from src.view.admin import admin
 from src.auth.parent import parent
+from src.view.driver import driver
 from flask_jwt_extended import JWTManager
 
 
@@ -26,7 +28,9 @@ def create_app(test_config=None):
    db.init_app(app)
    JWTManager(app)
    app.register_blueprint(admin)
+   app.register_blueprint(admin_auth)
    app.register_blueprint(parent)
+   app.register_blueprint(driver)
 
 
    return app

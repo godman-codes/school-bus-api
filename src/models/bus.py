@@ -1,16 +1,16 @@
 from src.models import db
-
+from src.models.trip import Trip
 class Bus(db.Model):
    id = db.Column(db.Integer, primary_key=True)
    bus_name = db.Column(db.String, nullable=False)
    plate_number = db.Column(db.String, unique=True, nullable=False)
    bus_id = db.Column(db.String, nullable=False, unique=True)
    capacity = db.Column(db.Integer, nullable=False)
-   bus_driver = db.Column(db.Integer, db.ForeignKey('driver.id'))
    current_location = db.Column(db.Text, default='')
    initial_attendance = db.Column(db.Integer, default=0)
    is_active = db.Column(db.Boolean, default=False)
-   current_trip = db.relationship('Trip', backref='bus')
+   bus_driver = db.Column(db.Integer, db.ForeignKey('driver.id'))
+   current_trip = db.relationship(Trip, backref='bus')
 
    def activate_bus(self):
       self.is_active = True

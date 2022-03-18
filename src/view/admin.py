@@ -1,4 +1,4 @@
-from flask import jsonify, request
+from flask import jsonify, request, Blueprint
 from werkzeug.security import generate_password_hash
 import validators
 from src.constants.http_status_codes import HTTP_200_OK, HTTP_201_CREATED, HTTP_302_FOUND, HTTP_400_BAD_REQUEST, HTTP_404_NOT_FOUND
@@ -11,7 +11,8 @@ from src.helper.parentHelpers import create_username, phoneNumberConverter, stan
 from src.models.routes import Routes
 from src.models.trip import Trip
 from flask_jwt_extended import get_jwt_identity, jwt_required
-from src.auth.admin import admin
+
+admin = Blueprint('admin', __name__, url_prefix="/api/v1/admin")
 
 @admin.post('/register_parent')
 @jwt_required()
