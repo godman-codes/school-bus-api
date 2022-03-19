@@ -14,18 +14,22 @@ class Trip(db.Model):
    def start_timestamps(self):
       self.start_timestamp = datetime.now()
       db.session.commit()
+      return self.start_timestamp
 
    def end_timestamps(self):
       self.end_timestamp = datetime.now()
       db.session.commit()
+      return self.end_timestamp
 
    def get_latest_gps(self, gps):
       self.latest_gps = gps
       db.session.commit()
+      return self.latest_gps
       
    def get_last_update_timestamp(self):
       self.last_update_timestamp = datetime.now()
       db.session.commit()
+      return self.last_update_timestamp
 
    def __repr__(self) -> str:
       f'Trip>>> {Trip.id}'   

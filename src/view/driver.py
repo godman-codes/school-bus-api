@@ -1,8 +1,9 @@
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import jwt_required, get_jwt_identity, create_access_token, create_refresh_token
-from werkzeug.security import check_password_hash
+from werkzeug.security import check_password_hash, generate_password_hash
 from src.models.driver import Driver
-from src.constants.http_status_codes import HTTP_302_FOUND, HTTP_404_NOT_FOUND, HTTP_200_OK, HTTP_401_UNAUTHORIZED
+from src.constants.http_status_codes import HTTP_302_FOUND, HTTP_400_BAD_REQUEST, HTTP_404_NOT_FOUND, HTTP_200_OK, HTTP_401_UNAUTHORIZED
+from src.models import db
 from src.models.routes import Routes
 from src.models.trip import Trip
 from src.models.bus import Bus
@@ -39,7 +40,7 @@ def login_driver():
          }), HTTP_200_OK
          
          
-      return jsonify({'error': 'password id invalid'}), HTTP_401_UNAUTHORIZED
+      return jsonify({'error': 'password is invalid'}), HTTP_401_UNAUTHORIZED
 
    return jsonify({'error': 'invalid driver_id'}), HTTP_401_UNAUTHORIZED
 
@@ -92,8 +93,8 @@ def get_trips():
 def driver_details():
    driver_id = get_jwt_identity()
    driver = Driver.query.filter_by(id=driver_id).first()
-   driver_bus = Bus.query.filter_by(bus_driver=driver_id).first()
-   driver_trip = Trip.query.filter_by(bus_id=driver_bus.bus_id).all()
+   driver_bus = Bus.query.filter_by(bus_driver=driver_id).all()
+   driver_trip = Trip.query.filter_by(bus_id=driver_bus[0].bus_id).all()
    return jsonify({
       'driver': {
          'driver_first_name': driver.first_name,
@@ -101,7 +102,7 @@ def driver_details():
          'driver_id': driver.driver_id,
          'driver_email': driver.driver_email,
          'driver_phone': driver.driver_phone,
-         'bus': [[x.id, x.bus_name, x.bus_plate_number] for x in driver_bus],
+         'bus': [[x.id, x.bus_name, x.plate_number] for x in driver_bus],
          'trips': [[x.id, x.routes, x.bus_id, x.date] for x in driver_trip]
          }
    }), HTTP_200_OK
@@ -116,3 +117,53 @@ def refresh_users_token():
       'access': access
    }), HTTP_200_OK
    
+
+
+@driver.post('/start_trip')
+@jwt_required()
+def start_trip():
+   
+   current_user = get_jwt_identity()
+   drivers = Bus.query.filter_by(bus_driver=current_user).first()
+   trips = Trip.query.filter_by(bus_id=drivers.bus_id).first()
+   if trips.start_timestamps:
+      return jsonify({
+         'error': 'this trip has already been started'
+      })
+
+   start_timestamp = trips.start_timestamps()
+   make_active = drivers.activate_bus()
+   
+
+   return jsonify({
+      'message': 'trip has started',
+      'trip': {
+         'trip_date': trips.date,
+         'start_timestamp': start_timestamp,
+         'is_active': make_active,
+         'routes': trips.routes,
+         'bus_id': trips.bus_id
+      }
+      }), HTTP_200_OK   
+
+@driver.put('/change_password')
+@jwt_required()
+def change_password():
+   driver_id = get_jwt_identity()
+   old_password = request.json['old_password']
+   new_password = request.json['new_password']
+   drivers = Driver.query.filter_by(id=driver_id).first()
+   is_pass = check_password_hash(drivers.password, old_password)
+   if is_pass:
+      if len(new_password) < 6:
+         return jsonify({
+            'error': 'password is too short'
+            }), HTTP_400_BAD_REQUEST
+      drivers.password = generate_password_hash(new_password)
+      db.session.commit()
+      return jsonify({
+         'message': 'password changed successfully'
+         }), HTTP_200_OK
+   return jsonify({'error': 'password is invalid'}), HTTP_401_UNAUTHORIZED
+
+

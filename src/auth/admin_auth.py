@@ -1,6 +1,7 @@
 from src.constants.http_status_codes import HTTP_200_OK, HTTP_201_CREATED, HTTP_400_BAD_REQUEST, HTTP_401_UNAUTHORIZED
 from flask import Blueprint, jsonify, request
 import validators
+from src.models import admin
 from src.models.admin import School
 from werkzeug.security import check_password_hash, generate_password_hash
 from src.models import db
@@ -127,4 +128,23 @@ def refresh_users_token():
    return jsonify({
       'access': access
    }), HTTP_200_OK
-   
+
+@admin_auth.put('/change_password')
+@jwt_required()
+def change_password():
+   admin_id = get_jwt_identity()
+   old_password = request.json['old_password']
+   new_password = request.json['new_password']
+   admin = School.query.filter_by(id=admin_id).first()
+   is_pass = check_password_hash(admin.school_admin_password, old_password)
+   if is_pass:
+      if len(new_password) < 6:
+         return jsonify({
+            'error': 'password is too short'
+            }), HTTP_400_BAD_REQUEST
+      admin.school_admin_password = generate_password_hash(new_password)
+      db.session.commit()
+      return jsonify({
+         'message': 'password changed successfully'
+         }), HTTP_200_OK
+   return jsonify({'error': 'password is invalid'}), HTTP_401_UNAUTHORIZED

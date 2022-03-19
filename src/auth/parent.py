@@ -1,8 +1,9 @@
 from flask import Blueprint, request, jsonify
-from src.constants.http_status_codes import HTTP_200_OK, HTTP_401_UNAUTHORIZED
+from src.constants.http_status_codes import HTTP_200_OK, HTTP_400_BAD_REQUEST, HTTP_401_UNAUTHORIZED
+from src.models import db
 from src.models.parent import Parent
 from src.models.child import Child
-from werkzeug.security import check_password_hash
+from werkzeug.security import check_password_hash, generate_password_hash
 from flask_jwt_extended import create_access_token, create_refresh_token, get_jwt_identity, jwt_required
 
 parent = Blueprint('parent', __name__, url_prefix='/api/v1/parent')
@@ -67,5 +68,26 @@ def refresh_users_token():
    return jsonify({
       'access': access
    }), HTTP_200_OK
-   
+
+
+@parent.put('/change_password')
+@jwt_required()
+def change_password():
+   parent_id = get_jwt_identity()
+   old_password = request.json['old_password']
+   new_password = request.json['new_password']
+   parents = Parent.query.filter_by(id=parent_id).first()
+   is_pass = check_password_hash(parents.password, old_password)
+   if is_pass:
+      if len(new_password) < 6:
+         return jsonify({
+            'error': 'password is too short'
+            }), HTTP_400_BAD_REQUEST
+      parents.password = generate_password_hash(new_password)
+      db.session.commit()
+      return jsonify({
+         'message': 'password changed successfully'
+         }), HTTP_200_OK
+   return jsonify({'error': 'password is invalid'}), HTTP_401_UNAUTHORIZED
+
    

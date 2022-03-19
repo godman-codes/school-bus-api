@@ -20,6 +20,7 @@ class Bus(db.Model):
    def deactivate_bus(self):
       self.is_active = False
       db.session.commit()
+      return self.is_active
       
    def __repr__(self) -> str:
       return f'Bus>> {self.bus_number}'
