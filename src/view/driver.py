@@ -1,6 +1,8 @@
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import jwt_required, get_jwt_identity, create_access_token, create_refresh_token
 from werkzeug.security import check_password_hash, generate_password_hash
+from src.models.attendance import Attendance
+from src.models.child import Child
 from src.models.driver import Driver
 from src.constants.http_status_codes import HTTP_302_FOUND, HTTP_400_BAD_REQUEST, HTTP_404_NOT_FOUND, HTTP_200_OK, HTTP_401_UNAUTHORIZED
 from src.models import db
@@ -166,4 +168,28 @@ def change_password():
          }), HTTP_200_OK
    return jsonify({'error': 'password is invalid'}), HTTP_401_UNAUTHORIZED
 
-
+@driver.post('/child_picked_attendance')
+@jwt_required()
+def child_picked_attendance():
+   drivers = get_jwt_identity()
+   child_first_name = request.json['first_name']
+   child_last_name = request.json['last_name']
+   child_parent = request.json['parent']
+   bus_gps = request.json['bus_gps']
+   # if child_first_name or child_last_name or child_parent == '':
+   #    return({'error': 'enter valid child'}), HTTP_404_NOT_FOUND
+   child = Child.query.filter_by(first_name=child_first_name, last_name=child_last_name, child_parent=child_parent).first()
+   child_trip = Trip.query.filter_by(routes=child.child_routes).first()
+   trip_bus = Bus.query.filter_by(bus_driver=drivers).first()
+   if trip_bus.is_active != True:
+      return jsonify({'error': 'Bus is not active'}), HTTP_400_BAD_REQUEST
+   attendance = Attendance(
+      child_id=child.id,
+      trip_id=child_trip.id,
+   )
+   db.session.add(attendance)
+   db.session.commit()
+   attendance = Attendance.query.filter_by(child_id=child.id, trip_id=child_trip.id).first()
+   attendance.picked(bus_gps)
+   return jsonify({'message': 'attendance taken'}), HTTP_200_OK
+   
