@@ -1,3 +1,4 @@
+from tkinter import N
 from flask import jsonify, request, Blueprint
 from werkzeug.security import generate_password_hash
 import validators
@@ -454,3 +455,20 @@ def register_trip():
          'date': trip.date
       }
    }), HTTP_201_CREATED
+
+
+@admin.get('/get_active_trips')
+@jwt_required()
+def get_active_trips():   
+   trips = Trip.query.all()
+   active_trips = {}
+   for i in trips:
+      if i.start_timestamp != None and i.end_timestamp == None:
+         active_trips[i.id] = {'date': i.date,
+                           'start_timestamp': i.start_timestamp,
+                           'end_timestamp': i.end_timestamp,
+                           'latest_gps': i.latest_gps,
+                           'bus_id': i.bus_id,
+                           'last_update_timestamp': i.last_update_timestamp}
+   if active_trips:
+      return jsonify(active_trips)
