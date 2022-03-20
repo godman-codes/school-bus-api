@@ -263,7 +263,7 @@ def register_bus():
    db.session.commit()
 
    return jsonify({
-      'message': 'child successfully registered',
+      'message': 'bus successfully registered',
       'bus': {
          'bus_name': bus_name,
          'plate_number': plate_number,
@@ -423,6 +423,7 @@ def register_routes():
 def register_trip():
    routes = request.json['routes']
    bus_id = request.json['bus_id']
+   date = request.json['schedule_date']
 
    if not routes or len(routes) < 1:
       return jsonify({'error': 'enter a valid route'}), HTTP_400_BAD_REQUEST
@@ -441,7 +442,8 @@ def register_trip():
 
    trip = Trip(
       routes=routes,
-      bus_id=bus_id
+      bus_id=bus_id,
+      date=date
    )
 
    db.session.add(trip)
@@ -452,7 +454,7 @@ def register_trip():
       'trip': {
          'routes': f'Route {routes}',
          'bus_id': bus_id,
-         'date': trip.date
+         'date': date
       }
    }), HTTP_201_CREATED
 

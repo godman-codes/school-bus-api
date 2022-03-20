@@ -1,10 +1,14 @@
 from flask import Blueprint, request, jsonify
 from src.constants.http_status_codes import HTTP_200_OK, HTTP_400_BAD_REQUEST, HTTP_401_UNAUTHORIZED
 from src.models import db
+from src.models.bus import Bus
+from src.models.driver import Driver
 from src.models.parent import Parent
 from src.models.child import Child
 from werkzeug.security import check_password_hash, generate_password_hash
 from flask_jwt_extended import create_access_token, create_refresh_token, get_jwt_identity, jwt_required
+
+from src.models.trip import Trip
 
 parent = Blueprint('parent', __name__, url_prefix='/api/v1/parent')
 
@@ -90,4 +94,29 @@ def change_password():
          }), HTTP_200_OK
    return jsonify({'error': 'password is invalid'}), HTTP_401_UNAUTHORIZED
 
-   
+@parent.get('/get_child_trip')
+@jwt_required()
+def get_child_trip():
+   current_user = get_jwt_identity()
+   child = Child.query.filter_by(child_parent=current_user).all()
+   trip = Trip.query.filter_by(routes=child[0].child_routes).first()
+   bus = Bus.query.filter_by(bus_id=trip.bus_id).first()
+   driver = Driver.query.filter_by(id=bus.bus_driver).first()
+   return jsonify({
+      'trip': {
+         'routes': trip.routes,
+         'date': trip.date,
+         'start_timestamp': trip.start_timestamp,
+         'latest_gps': trip.latest_gps
+      },
+      'bus': {
+         'id': bus.id,
+         'bus_name': bus.bus_name,
+         'plate_number': bus.plate_number,
+         'driver': {
+            'first_name': driver.first_name,
+            'last_name': driver.last_name,
+            'driver_phone': driver.driver_phone
+         }
+      }
+   })

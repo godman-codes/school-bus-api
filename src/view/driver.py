@@ -189,7 +189,7 @@ def child_picked_attendance():
    )
    db.session.add(attendance)
    db.session.commit()
-   attendance = Attendance.query.filter_by(child_id=child.id, trip_id=child_trip.id).first()
+   # attendance = Attendance.query.filter_by(child_id=child.id, trip_id=child_trip.id).first()
    attendance.picked(bus_gps)
    return jsonify({'message': 'attendance taken'}), HTTP_200_OK
    

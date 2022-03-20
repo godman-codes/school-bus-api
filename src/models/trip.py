@@ -3,7 +3,7 @@ from src.models import db
 from src.models.routes import Routes
 class Trip(db.Model):
    id = db.Column(db.Integer, primary_key=True)
-   date = db.Column(db.DateTime, default=datetime.now())
+   date = db.Column(db.String)
    start_timestamp = db.Column(db.DateTime, nullable=True,)
    end_timestamp = db.Column(db.DateTime, nullable=True)
    latest_gps = db.Column(db.Text, nullable=True)
