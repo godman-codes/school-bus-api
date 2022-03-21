@@ -1,6 +1,8 @@
 from flask import Blueprint, jsonify, request
+from datetime import datetime
 from flask_jwt_extended import jwt_required, get_jwt_identity, create_access_token, create_refresh_token
 from werkzeug.security import check_password_hash, generate_password_hash
+from src import models
 from src.models.attendance import Attendance
 from src.models.child import Child
 from src.models.driver import Driver
@@ -9,6 +11,7 @@ from src.models import db
 from src.models.routes import Routes
 from src.models.trip import Trip
 from src.models.bus import Bus
+from src.models.location import Location
 
 driver = Blueprint('driver', __name__, url_prefix="/api/v1/driver")
 
@@ -192,4 +195,72 @@ def child_picked_attendance():
    # attendance = Attendance.query.filter_by(child_id=child.id, trip_id=child_trip.id).first()
    attendance.picked(bus_gps)
    return jsonify({'message': 'attendance taken'}), HTTP_200_OK
+
+
+@driver.post('/post_location')
+@jwt_required()
+def get_location():
+   location = request.json['location']
+   driver_id = get_jwt_identity()
+
+   if location is None:
+      return jsonify({
+         'error': 'location is invalid'
+      })
+   current_time = datetime.now()
+   bus = Bus.query.filter_by(bus_driver=driver_id).first()
+   if not bus:
+      return jsonify({'error': 'You were not assigned a bus'})
+   trip = Trip.query.filter_by(bus_id=bus.bus_id).first()
+   if not trip:
+      return jsonify({'error': 'this bus not assigned any trip'})
+   trip.lastest_gps = location
+   trip.last_update_timestamp = current_time
+   existing_location = Location.query.filter_by(trip_id=trip.id).first()
+   if existing_location:
+      existing_location.update_location(location)
+      existing_location.get_times_stamp()
+      return jsonify({
+      'message': 'successfully updated',
+      'location': {
+         'location_id': existing_location.id,
+         'times_stamp': existing_location.times_stamp,
+         'gps': existing_location.gps,
+         'trip': {
+            'trip_id': trip.id,
+            'routes': trip.routes,
+            'date': trip.date,
+            'started': trip.start_timestamp,
+         },
+         'bus': {
+            'plate_number': bus.plate_number,
+            'bus_id': bus.bus_id
+         }
+      }
+   })
+   locations = Location(gps=location,
+                        times_stamp=current_time,
+                        trip_id=trip.id
+                        )
    
+   db.session.add(locations)
+   db.session.commit()
+
+   return jsonify({
+      'message': 'success',
+      'location': {
+         'location_id': locations.id,
+         'times_stamp': locations.times_stamp,
+         'gps': locations.gps,
+         'trip': {
+            'trip_id': trip.id,
+            'routes': trip.routes,
+            'date': trip.date,
+            'started': trip.start_timestamp,
+         },
+         'bus': {
+            'plate_number': bus.plate_number,
+            'bus_id': bus.bus_id
+         }
+      }
+   })
