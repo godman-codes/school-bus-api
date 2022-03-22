@@ -2,13 +2,12 @@ from flask import Blueprint, jsonify, request
 from datetime import datetime
 from flask_jwt_extended import jwt_required, get_jwt_identity, create_access_token, create_refresh_token
 from werkzeug.security import check_password_hash, generate_password_hash
-from src import models
 from src.models.attendance import Attendance
 from src.models.child import Child
 from src.models.driver import Driver
-from src.constants.http_status_codes import HTTP_302_FOUND, HTTP_400_BAD_REQUEST, HTTP_404_NOT_FOUND, HTTP_200_OK, HTTP_401_UNAUTHORIZED
+from src.constants.http_status_codes import HTTP_201_CREATED, HTTP_302_FOUND, HTTP_400_BAD_REQUEST, HTTP_404_NOT_FOUND, HTTP_200_OK, HTTP_401_UNAUTHORIZED
 from src.models import db
-from src.models.routes import Routes
+from src.models.notifications import Notification
 from src.models.trip import Trip
 from src.models.bus import Bus
 from src.models.location import Location
@@ -50,7 +49,7 @@ def login_driver():
    return jsonify({'error': 'invalid driver_id'}), HTTP_401_UNAUTHORIZED
 
 
-@driver.get("/get_drivers_trips")
+@driver.get("/get_drivers_bus")
 @jwt_required()
 def get_drivers_Bus():
    current_user = get_jwt_identity()
@@ -90,7 +89,7 @@ def get_trips():
          'latest_gps': trips.latest_gps,
          'last_update_timestamp': trips.last_update_timestamp
             }
-         })
+         }), HTTP_302_FOUND
 
 
 @driver.get("/driver_detail")
@@ -131,15 +130,22 @@ def start_trip():
    current_user = get_jwt_identity()
    drivers = Bus.query.filter_by(bus_driver=current_user).first()
    trips = Trip.query.filter_by(bus_id=drivers.bus_id).first()
-   if trips.start_timestamps:
+   if trips.start_timestamp:
       return jsonify({
          'error': 'this trip has already been started'
-      })
-
+      }), HTTP_400_BAD_REQUEST
+   gps = Location.query.filter_by(trip_id=trips.id).first()
+   if gps is None:
+      return jsonify({'error': 'get location first'}), HTTP_401_UNAUTHORIZED
    start_timestamp = trips.start_timestamps()
    make_active = drivers.activate_bus()
-   
-
+   latest_gps = trips.get_latest_gps(gps.gps)
+   notification = Notification(
+      message=f'{drivers.bus_id} has started its trip',
+      driver=drivers.bus_driver
+   )
+   db.session.add(notification)
+   db.session.commit()
    return jsonify({
       'message': 'trip has started',
       'trip': {
@@ -147,7 +153,8 @@ def start_trip():
          'start_timestamp': start_timestamp,
          'is_active': make_active,
          'routes': trips.routes,
-         'bus_id': trips.bus_id
+         'bus_id': trips.bus_id,
+         'latest_gps': latest_gps
       }
       }), HTTP_200_OK   
 
@@ -171,30 +178,6 @@ def change_password():
          }), HTTP_200_OK
    return jsonify({'error': 'password is invalid'}), HTTP_401_UNAUTHORIZED
 
-@driver.post('/child_picked_attendance')
-@jwt_required()
-def child_picked_attendance():
-   drivers = get_jwt_identity()
-   child_first_name = request.json['first_name']
-   child_last_name = request.json['last_name']
-   child_parent = request.json['parent']
-   bus_gps = request.json['bus_gps']
-   # if child_first_name or child_last_name or child_parent == '':
-   #    return({'error': 'enter valid child'}), HTTP_404_NOT_FOUND
-   child = Child.query.filter_by(first_name=child_first_name, last_name=child_last_name, child_parent=child_parent).first()
-   child_trip = Trip.query.filter_by(routes=child.child_routes).first()
-   trip_bus = Bus.query.filter_by(bus_driver=drivers).first()
-   if trip_bus.is_active != True:
-      return jsonify({'error': 'Bus is not active'}), HTTP_400_BAD_REQUEST
-   attendance = Attendance(
-      child_id=child.id,
-      trip_id=child_trip.id,
-   )
-   db.session.add(attendance)
-   db.session.commit()
-   # attendance = Attendance.query.filter_by(child_id=child.id, trip_id=child_trip.id).first()
-   attendance.picked(bus_gps)
-   return jsonify({'message': 'attendance taken'}), HTTP_200_OK
 
 
 @driver.post('/post_location')
@@ -206,14 +189,14 @@ def get_location():
    if location is None:
       return jsonify({
          'error': 'location is invalid'
-      })
-   current_time = datetime.now()
+      }), HTTP_400_BAD_REQUEST
    bus = Bus.query.filter_by(bus_driver=driver_id).first()
    if not bus:
-      return jsonify({'error': 'You were not assigned a bus'})
+      return jsonify({'error': 'You were not assigned a bus'}), HTTP_401_UNAUTHORIZED
    trip = Trip.query.filter_by(bus_id=bus.bus_id).first()
    if not trip:
-      return jsonify({'error': 'this bus not assigned any trip'})
+      return jsonify({'error': 'this bus not assigned any trip'}), HTTP_400_BAD_REQUEST
+   current_time = datetime.now()
    trip.lastest_gps = location
    trip.last_update_timestamp = current_time
    existing_location = Location.query.filter_by(trip_id=trip.id).first()
@@ -231,13 +214,14 @@ def get_location():
             'routes': trip.routes,
             'date': trip.date,
             'started': trip.start_timestamp,
+            'last_update': current_time
          },
          'bus': {
             'plate_number': bus.plate_number,
             'bus_id': bus.bus_id
          }
       }
-   })
+   }), HTTP_200_OK
    locations = Location(gps=location,
                         times_stamp=current_time,
                         trip_id=trip.id
@@ -257,10 +241,103 @@ def get_location():
             'routes': trip.routes,
             'date': trip.date,
             'started': trip.start_timestamp,
+            'last_update': current_time
+
          },
          'bus': {
             'plate_number': bus.plate_number,
             'bus_id': bus.bus_id
          }
       }
-   })
+   }), HTTP_201_CREATED
+
+@driver.post('/child_picked_attendance')
+@jwt_required()
+def child_picked_attendance():
+   drivers = get_jwt_identity()
+   child_first_name = request.json['first_name']
+   child_last_name = request.json['last_name']
+   child_parent = request.json['parent']
+   # if child_first_name or child_last_name or child_parent == '':
+   #    return({'error': 'enter valid child'}), HTTP_404_NOT_FOUND
+   child = Child.query.filter_by(first_name=child_first_name, last_name=child_last_name, child_parent=child_parent).first()
+   child_trip = Trip.query.filter_by(routes=child.child_routes).first()
+   trip_bus = Bus.query.filter_by(bus_driver=drivers).first()
+   bus_location = Location.query.filter_by(trip_id=child_trip.id).first()
+   if trip_bus.is_active != True:
+      return jsonify({'error': 'Bus is not active'}), HTTP_400_BAD_REQUEST
+   attendance = Attendance(
+      child_id=child.id,
+      trip_id=child_trip.id,
+   )
+   notification = Notification(
+      message=f'{child_first_name} just entered the school bus',
+      parent=child_parent
+      )
+   db.session.add(attendance)
+   db.session.add(notification)
+   db.session.commit()
+   # attendance = Attendance.query.filter_by(child_id=child.id, trip_id=child_trip.id).first()
+
+   attendance.picked(bus_location.gps)
+   return jsonify({'message': 'picked attendance taken'}), HTTP_200_OK
+
+
+@driver.put('/child_drop_attendance')
+@jwt_required()
+def child_drop_attendance():
+   drivers = get_jwt_identity()
+   child_first_name = request.json['first_name']
+   child_last_name = request.json['last_name']
+   child_parent = request.json['parent']
+   
+   child = Child.query.filter_by(first_name=child_first_name, last_name=child_last_name, child_parent=child_parent).first()
+   child_trip = Trip.query.filter_by(routes=child.child_routes).first()
+   trip_bus = Bus.query.filter_by(bus_driver=drivers).first()
+   bus_location = Location.query.filter_by(trip_id=child_trip.id).first()
+   if trip_bus.is_active != True:
+      return jsonify({'error': 'Bus is not active'}), HTTP_400_BAD_REQUEST
+   attendance = Attendance.query.filter_by(child_id=child.id).first()
+   if attendance is None:
+      return jsonify({'error': 'this child was not picked'}), HTTP_404_NOT_FOUND
+   notification = Notification(
+      message=f'{child_first_name} just got to your destination',
+      parent=child_parent
+      )
+   db.session.add(notification)
+   attendance.dropped(bus_location.gps)
+   return jsonify({'message': 'drop attendance taken'}), HTTP_200_OK
+
+@driver.post('/end_trip')
+@jwt_required()
+def end_trip():
+   current_user = get_jwt_identity()
+   drivers = Bus.query.filter_by(bus_driver=current_user).first()
+   trips = Trip.query.filter_by(bus_id=drivers.bus_id).first()
+   if trips.end_timestamp:
+      return jsonify({
+         'error': 'this trip has already been ended'
+      }), HTTP_400_BAD_REQUEST
+   
+   end_timestamp = trips.end_timestamps()
+   make_active = drivers.deactivate_bus()
+   notification = Notification(
+      message=f'{drivers.bus_id} has ended its trip',
+      driver=f'{drivers.bus_driver}'
+   )
+   db.session.add(notification)
+   db.session.commit()
+   return jsonify({
+      'message': 'trip was ended successfully',
+      'trip': {
+         'trip_date': trips.date,
+         'start_timestamp': trips.start_timestamp,
+         'end_timestamp': end_timestamp,
+         'is_active': make_active,
+         'routes': trips.routes,
+         'bus_id': trips.bus_id,
+         'latest_gps': trips.latest_gps
+      }
+      }), HTTP_200_OK   
+
+

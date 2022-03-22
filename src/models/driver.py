@@ -9,6 +9,7 @@ class Driver(db.Model):
    driver_email = db.Column(db.String, unique=True, nullable=False)
    driver_phone = db.Column(db.String, unique=True, nullable=False)
    bus = db.relationship(Bus, backref='driver_bus')
+   notification = db.relationship('Notification', backref='')
 
    def __repr__(self) -> str:
       return f'Driver>>> {self.last_name}'

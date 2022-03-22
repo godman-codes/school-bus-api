@@ -119,4 +119,4 @@ def get_child_trip():
             'driver_phone': driver.driver_phone
          }
       }
-   })
+   }), HTTP_200_OK

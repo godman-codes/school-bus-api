@@ -81,8 +81,8 @@ def register_parent():
          'password': password,
          'parent_email': parent_email,
          'parent_phone': parent_phone,
-         'username': username,
-         'parent_child': [[x.id, x.first_name, x.last_name] for x in Child.query.filter_by(child_parent=parent_kid_help.id).all()]
+         'username': username
+         # 'parent_child': [[x.id, x.first_name, x.last_name] for x in Child.query.filter_by(child_parent=parent_kid_help.id).all()]
       } 
          }), HTTP_201_CREATED
 
