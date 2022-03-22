@@ -3,6 +3,7 @@ from flask import jsonify, request, Blueprint
 from werkzeug.security import generate_password_hash
 import validators
 from src.constants.http_status_codes import HTTP_200_OK, HTTP_201_CREATED, HTTP_302_FOUND, HTTP_400_BAD_REQUEST, HTTP_404_NOT_FOUND
+from src.models.notifications import Notification
 from src.models.parent import Parent
 from src.models.child import Child
 from src.models.driver import Driver
@@ -474,3 +475,19 @@ def get_active_trips():
                            'last_update_timestamp': i.last_update_timestamp}
    if active_trips:
       return jsonify(active_trips)
+
+@admin.get('/get_notifications')
+@jwt_required()
+def get_notification():
+   notifications = Notification.query.all()
+   if notifications is None:
+      return jsonify({'error': 'No notifications yet'}), HTTP_404_NOT_FOUND
+   notify = {}
+   for i in notifications:
+      notify[i.id] = {
+         'message': i.message,
+         'time': i.time,
+         'parent': i.parent,
+         'driver': i.driver
+      }
+   return jsonify(notify), HTTP_302_FOUND

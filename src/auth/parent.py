@@ -1,8 +1,9 @@
 from flask import Blueprint, request, jsonify
-from src.constants.http_status_codes import HTTP_200_OK, HTTP_400_BAD_REQUEST, HTTP_401_UNAUTHORIZED
+from src.constants.http_status_codes import HTTP_200_OK, HTTP_302_FOUND, HTTP_400_BAD_REQUEST, HTTP_401_UNAUTHORIZED
 from src.models import db
 from src.models.bus import Bus
 from src.models.driver import Driver
+from src.models.notifications import Notification
 from src.models.parent import Parent
 from src.models.child import Child
 from werkzeug.security import check_password_hash, generate_password_hash
@@ -120,3 +121,19 @@ def get_child_trip():
          }
       }
    }), HTTP_200_OK
+
+
+@parent.get('/get_notifications')
+@jwt_required()
+def get_notification():
+   current_user = get_jwt_identity()
+   notifications = Notification.query.filter_by(parent=current_user).all()
+   if notifications is None:
+      return jsonify({'error': 'There are no notifications for you'}), HTTP_400_BAD_REQUEST
+   notify = {}
+   for i in notifications:
+      notify[i.id] = {
+         'message': i.message,
+         'time': i.time
+      }
+   return jsonify(notify), HTTP_302_FOUND

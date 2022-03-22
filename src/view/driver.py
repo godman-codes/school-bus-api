@@ -272,6 +272,7 @@ def child_picked_attendance():
    )
    notification = Notification(
       message=f'{child_first_name} just entered the school bus',
+      child=child.id,
       parent=child_parent
       )
    db.session.add(attendance)
@@ -302,6 +303,7 @@ def child_drop_attendance():
       return jsonify({'error': 'this child was not picked'}), HTTP_404_NOT_FOUND
    notification = Notification(
       message=f'{child_first_name} just got to your destination',
+      child=child.id,
       parent=child_parent
       )
    db.session.add(notification)
