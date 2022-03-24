@@ -491,3 +491,28 @@ def get_notification():
          'driver': i.driver
       }
    return jsonify(notify), HTTP_302_FOUND
+
+@admin.get('/get_trip/<int:id>')
+@jwt_required()
+def get_child_trip(id):
+   trip = Trip.query.filter_by(id=id).first()
+   bus = Bus.query.filter_by(bus_id=trip.bus_id).first()
+   driver = Driver.query.filter_by(id=bus.bus_driver).first()
+   return jsonify({
+      'trip': {
+         'routes': trip.routes,
+         'date': trip.date,
+         'start_timestamp': trip.start_timestamp,
+         'latest_gps': trip.latest_gps
+      },
+      'bus': {
+         'id': bus.id,
+         'bus_name': bus.bus_name,
+         'plate_number': bus.plate_number,
+         'driver': {
+            'first_name': driver.first_name,
+            'last_name': driver.last_name,
+            'driver_phone': driver.driver_phone
+         }
+      }
+   }), HTTP_302_FOUND

@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify
-from src.constants.http_status_codes import HTTP_200_OK, HTTP_302_FOUND, HTTP_400_BAD_REQUEST, HTTP_401_UNAUTHORIZED
+from src.constants.http_status_codes import HTTP_200_OK, HTTP_204_NO_CONTENT, HTTP_302_FOUND, HTTP_400_BAD_REQUEST, HTTP_401_UNAUTHORIZED, HTTP_404_NOT_FOUND
 from src.models import db
 from src.models.bus import Bus
 from src.models.driver import Driver
@@ -95,12 +95,26 @@ def change_password():
          }), HTTP_200_OK
    return jsonify({'error': 'password is invalid'}), HTTP_401_UNAUTHORIZED
 
-@parent.get('/get_child_trip')
+
+
+# @parent.get('/get_child-detail')
+# @jwt_required()
+# def get_child_details():
+#    current_user = get_jwt_identity()
+#    child = Child.query.filter_by(child_parent=current_user).all()
+#    if child is None:
+#       return jsonify({})
+#    child_obj = {}
+
+
+
+
+@parent.get('/get_child_trip/<int:id>')
 @jwt_required()
-def get_child_trip():
+def get_child_trip(id):
    current_user = get_jwt_identity()
-   child = Child.query.filter_by(child_parent=current_user).all()
-   trip = Trip.query.filter_by(routes=child[0].child_routes).first()
+   child = Child.query.filter_by(child_parent=current_user, id=id).first()
+   trip = Trip.query.filter_by(routes=child.child_routes).first()
    bus = Bus.query.filter_by(bus_id=trip.bus_id).first()
    driver = Driver.query.filter_by(id=bus.bus_driver).first()
    return jsonify({
@@ -120,7 +134,7 @@ def get_child_trip():
             'driver_phone': driver.driver_phone
          }
       }
-   }), HTTP_200_OK
+   }), HTTP_302_FOUND
 
 
 @parent.get('/get_notifications')
@@ -137,3 +151,16 @@ def get_notification():
          'time': i.time
       }
    return jsonify(notify), HTTP_302_FOUND
+
+# @parent.delete('/delete_notification/<int:id>')
+# @jwt_required()
+# def get_notification(id):
+#    current_user = get_jwt_identity()
+#    notification = Notification.query.filter_by(id=id, parent=current_user).first()
+#    if not notification:
+#       return jsonify({
+#          'error': 'nottification not found'
+#       }), HTTP_404_NOT_FOUND
+#    db.session.delete(notification)
+#    db.session.commit()
+#    return jsonify({'message': 'deleted'}), HTTP_204_NO_CONTENT
