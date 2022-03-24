@@ -1,0 +1,25 @@
+Search bus
+---
+tags:
+   - Search
+
+parameters:
+   - name: body
+     description: the body should contain the name of bus being searched
+     in: body
+     required: true
+     schema:
+        type: object
+        required:
+           - "bus"
+        properties:
+           bus:
+              type: "string"
+              example: "uiuihwi"
+
+responses:
+   200:
+      description: an object of the child info
+
+   401:
+      description: Fails to get items due to authentication error

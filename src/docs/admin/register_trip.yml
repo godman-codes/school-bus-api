@@ -1,0 +1,31 @@
+Trip Registration
+---
+tags:
+   - Registration
+parameters:
+   - name: body
+     description: The body should contain the trip's Registration data
+     in: body
+     required: true
+     schema:
+        type: object
+        required:
+           - "routes"
+           - "bus_id"
+           - "date"
+        properties:
+           routes:
+              type: "integer"
+              example: "1"
+           bus_id:
+              type: "string"
+              example: "efeg3"
+           date:
+              type: "string"
+              example: "uiuihwi78323"
+responses:
+   201:
+      description: When a driver is successfully registers
+
+   400:
+      description: Fails to Register due to bad request data

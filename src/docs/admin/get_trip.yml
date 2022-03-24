@@ -1,0 +1,16 @@
+GET trip
+---
+tags:
+   - Admin
+
+parameters:
+   - in: path
+     name: Trip
+     required: true
+
+responses:
+   200:
+      description: an object of the trip info
+
+   401:
+      description: Fails to get items due to authentication error

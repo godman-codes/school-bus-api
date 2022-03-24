@@ -1,0 +1,27 @@
+get drivers device location
+---
+tags:
+   - Driver
+parameters:
+   - name: body
+     description: The body should contain the location cordinates
+     in: body
+     required: true
+     schema:
+        type: object
+        required:
+           - "location"
+
+        properties:
+           location:
+              type: "string"
+              example: "768726546627"
+responses:
+   200:
+      description: location succesfully updated
+
+   400:
+      description: Fails to login due to bad request data
+
+   401:
+      description: A user supplies incorrect credentials

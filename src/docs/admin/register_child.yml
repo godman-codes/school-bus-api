@@ -1,0 +1,39 @@
+child Registration
+---
+tags:
+   - Registration
+parameters:
+   - name: body
+     description: The body should contain the child's Registration data
+     in: body
+     required: true
+     schema:
+        type: object
+        required:
+           - "first_name"
+           - "last_name"
+           - "child_class"
+           - "child_parent"
+           - "child_routes"
+        properties:
+           child_class:
+              type: "string"
+              example: "jss 1"
+           child_parent:
+              type: "integer"
+              example: "2"
+           child_routes:
+              type: "integer"
+              example: "0"
+           first_name:
+              type: "string"
+              example: "uiuihwi78323"
+           last_name:
+              type: "string"
+              example: "ifgygfgfgyiwf"
+responses:
+   201:
+      description: When a driver is successfully registers
+
+   400:
+      description: Fails to Register due to bad request data

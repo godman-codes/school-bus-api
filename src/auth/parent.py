@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify
-from src.constants.http_status_codes import HTTP_200_OK, HTTP_204_NO_CONTENT, HTTP_302_FOUND, HTTP_400_BAD_REQUEST, HTTP_401_UNAUTHORIZED, HTTP_404_NOT_FOUND
+from src.constants.http_status_codes import HTTP_200_OK, HTTP_302_FOUND, HTTP_400_BAD_REQUEST, HTTP_401_UNAUTHORIZED
 from src.models import db
 from src.models.bus import Bus
 from src.models.driver import Driver
@@ -8,17 +8,17 @@ from src.models.parent import Parent
 from src.models.child import Child
 from werkzeug.security import check_password_hash, generate_password_hash
 from flask_jwt_extended import create_access_token, create_refresh_token, get_jwt_identity, jwt_required
-
 from src.models.trip import Trip
+from flasgger import swag_from
 
 parent = Blueprint('parent', __name__, url_prefix='/api/v1/parent')
 
 @parent.post('/login_parent')
+@swag_from("../docs/parent/login_parent.yml")
 def login_parent():
    
    username = request.json['username']
    password = request.json['password']
-   # print('man')
    parent = Parent.query.filter_by(username=username).first()
    
    if parent:
@@ -50,6 +50,7 @@ def login_parent():
 
 @parent.get("/parent_detail")
 @jwt_required()
+@swag_from("../docs/parent/parent_details.yml")
 def parent_details():
    parent_id = get_jwt_identity()
    parents = Parent.query.filter_by(id=parent_id).first()
@@ -77,6 +78,7 @@ def refresh_users_token():
 
 @parent.put('/change_password')
 @jwt_required()
+@swag_from("../docs/admin_auth/change_password.yml")
 def change_password():
    parent_id = get_jwt_identity()
    old_password = request.json['old_password']
@@ -96,21 +98,9 @@ def change_password():
    return jsonify({'error': 'password is invalid'}), HTTP_401_UNAUTHORIZED
 
 
-
-# @parent.get('/get_child-detail')
-# @jwt_required()
-# def get_child_details():
-#    current_user = get_jwt_identity()
-#    child = Child.query.filter_by(child_parent=current_user).all()
-#    if child is None:
-#       return jsonify({})
-#    child_obj = {}
-
-
-
-
 @parent.get('/get_child_trip/<int:id>')
 @jwt_required()
+@swag_from("../docs/parent/get_child_trip.yml")
 def get_child_trip(id):
    current_user = get_jwt_identity()
    child = Child.query.filter_by(child_parent=current_user, id=id).first()
@@ -139,6 +129,7 @@ def get_child_trip(id):
 
 @parent.get('/get_notifications')
 @jwt_required()
+@swag_from("../docs/parent/get_notifications.yml")
 def get_notification():
    current_user = get_jwt_identity()
    notifications = Notification.query.filter_by(parent=current_user).all()

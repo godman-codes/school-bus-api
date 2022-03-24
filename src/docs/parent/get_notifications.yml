@@ -1,0 +1,16 @@
+GET notifications
+---
+tags:
+   - Parent
+
+parameters:
+   - in: header
+     name: Authorization
+     required: true
+
+responses:
+   200:
+      description: all notifications of important events
+
+   401:
+      description: Fails to get items due to authentication error

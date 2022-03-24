@@ -1,0 +1,36 @@
+bus Registration
+---
+tags:
+   - Registration
+parameters:
+   - name: body
+     description: The body should contain the bus's Registration data
+     in: body
+     required: true
+     schema:
+        type: object
+        required:
+           - "bus_name"
+           - "bus_id"
+           - "plate_number"
+           - "capacity"
+           - "driver"
+        properties:
+           plate_number:
+              type: "string"
+              example: "xxxxxxxx"
+           capacity:
+              type: "integer"
+              example: "2"
+           driver:
+              type: "string"
+              example: "0"
+           bus_name:
+              type: "string"
+              example: "uiuihwi78323"
+responses:
+   201:
+      description: When a driver is successfully registers
+
+   400:
+      description: Fails to Register due to bad request data

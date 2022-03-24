@@ -11,10 +11,12 @@ from src.models.notifications import Notification
 from src.models.trip import Trip
 from src.models.bus import Bus
 from src.models.location import Location
+from flasgger import swag_from
 
 driver = Blueprint('driver', __name__, url_prefix="/api/v1/driver")
 
 @driver.post('/login_driver')
+@swag_from("../docs/driver/login_driver.yml")
 def login_driver():
 
    driver_id = request.json['driver_id']
@@ -51,10 +53,14 @@ def login_driver():
 
 @driver.get("/get_drivers_bus")
 @jwt_required()
+@swag_from("../docs/driver/get_drivers_bus.yml")
 def get_drivers_Bus():
    current_user = get_jwt_identity()
 
    drivers_bus = Bus.query.filter_by(id=current_user).first()
+
+   if drivers_bus is None:
+      return({'message': 'there is no bus assigned to you contact admin for more details'}), HTTP_400_BAD_REQUEST
 
    if drivers_bus:
       return jsonify({
@@ -69,6 +75,7 @@ def get_drivers_Bus():
 
 @driver.get("/get_trips")
 @jwt_required()
+@swag_from("../docs/driver/get_trips.yml")
 def get_trips():
 
    current_user = get_jwt_identity()
@@ -77,7 +84,6 @@ def get_trips():
 
    if drivers_bus:
       trips = Trip.query.filter_by(bus_id=drivers_bus.bus_id).first()
-
       if trips:
          return jsonify({
             'trip': {
@@ -90,11 +96,16 @@ def get_trips():
          'last_update_timestamp': trips.last_update_timestamp
             }
          }), HTTP_302_FOUND
+      else:
+         return jsonify({'message': 'you have no trips contact admin for more info'}), HTTP_400_BAD_REQUEST
+   else:
+      return jsonify({'message': 'there is no bus assigned to you contact admin for more details'}), HTTP_400_BAD_REQUEST
 
 
 @driver.get("/driver_detail")
 @jwt_required()
-def driver_details():
+@swag_from("../docs/driver/driver_detail.yml")
+def driver_detail():
    driver_id = get_jwt_identity()
    driver = Driver.query.filter_by(id=driver_id).first()
    driver_bus = Bus.query.filter_by(bus_driver=driver_id).all()
@@ -125,6 +136,7 @@ def refresh_users_token():
 
 @driver.post('/start_trip')
 @jwt_required()
+@swag_from("../docs/driver/start_trip.yml")
 def start_trip():
    
    current_user = get_jwt_identity()
@@ -160,6 +172,7 @@ def start_trip():
 
 @driver.put('/change_password')
 @jwt_required()
+@swag_from("../docs/admin_auth/change_password.yml")
 def change_password():
    driver_id = get_jwt_identity()
    old_password = request.json['old_password']
@@ -180,8 +193,9 @@ def change_password():
 
 
 
-@driver.post('/post_location')
+@driver.post('/get_location')
 @jwt_required()
+@swag_from("../docs/driver/get_location.yml")
 def get_location():
    location = request.json['location']
    driver_id = get_jwt_identity()
@@ -192,7 +206,7 @@ def get_location():
       }), HTTP_400_BAD_REQUEST
    bus = Bus.query.filter_by(bus_driver=driver_id).first()
    if not bus:
-      return jsonify({'error': 'You were not assigned a bus'}), HTTP_401_UNAUTHORIZED
+      return jsonify({'error': 'You were not assigned a bus'}), HTTP_400_BAD_REQUEST
    trip = Trip.query.filter_by(bus_id=bus.bus_id).first()
    if not trip:
       return jsonify({'error': 'this bus not assigned any trip'}), HTTP_400_BAD_REQUEST
@@ -253,13 +267,14 @@ def get_location():
 
 @driver.post('/child_picked_attendance')
 @jwt_required()
+@swag_from("../docs/driver/child_picked_attendance.yml")
 def child_picked_attendance():
    drivers = get_jwt_identity()
    child_first_name = request.json['first_name']
    child_last_name = request.json['last_name']
    child_parent = request.json['parent']
-   # if child_first_name or child_last_name or child_parent == '':
-   #    return({'error': 'enter valid child'}), HTTP_404_NOT_FOUND
+   if not child_first_name or not child_last_name:
+      return({'error': 'enter valid child'}), HTTP_404_NOT_FOUND
    child = Child.query.filter_by(first_name=child_first_name, last_name=child_last_name, child_parent=child_parent).first()
    child_trip = Trip.query.filter_by(routes=child.child_routes).first()
    trip_bus = Bus.query.filter_by(bus_driver=drivers).first()
@@ -286,6 +301,7 @@ def child_picked_attendance():
 
 @driver.put('/child_drop_attendance')
 @jwt_required()
+@swag_from("../docs/driver/child_drop_attendance.yml")
 def child_drop_attendance():
    drivers = get_jwt_identity()
    child_first_name = request.json['first_name']
@@ -312,6 +328,7 @@ def child_drop_attendance():
 
 @driver.post('/end_trip')
 @jwt_required()
+@swag_from("../docs/driver/end_trip.yml")
 def end_trip():
    current_user = get_jwt_identity()
    drivers = Bus.query.filter_by(bus_driver=current_user).first()

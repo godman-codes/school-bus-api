@@ -1,0 +1,43 @@
+School Registration
+---
+tags:
+   - Registration
+parameters:
+   - name: body
+     description: The body should contain the user Registration data
+     in: body
+     required: true
+     schema:
+        type: object
+        required: -"school_location"
+           - "school_name"
+           - "school_website"
+           - "school_email"
+           - "school_admin_password"
+           - "school_admin_id"
+        properties:
+           email:
+              type: "email"
+              example: "crycetruly@gmail.com"
+           id:
+              type: "username_id"
+              example: "username"
+           password:
+              type: "string"
+              format: password
+              example: "********"
+           url:
+              type: "string"
+              example: "www.man.com"
+           school_location:
+              type: "string"
+              example: "uiuihwi78323"
+           school_name:
+              type: "string"
+              example: "ifgygfgfgyiwf"
+responses:
+   201:
+      description: When a user successfully registers
+
+   400:
+      description: Fails to Register due to bad request data

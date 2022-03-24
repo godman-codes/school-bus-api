@@ -1,0 +1,44 @@
+Driver Registration
+---
+tags:
+   - Registration
+parameters:
+   - name: body
+     description: The body should contain the driver's Registration data
+     in: body
+     required: true
+     schema:
+        type: object
+        required:
+           - "first_name"
+           - "last_name"
+           - "driver_phone"
+           - "driver_email"
+           - "driver_password"
+           - "driver_id"
+        properties:
+           email:
+              type: "email"
+              example: "crycetruly@gmail.com"
+           username:
+              type: "username_id"
+              example: "usernamex"
+           password:
+              type: "string"
+              format: password
+              example: "********"
+           driver_phone:
+              type: "string"
+              example: "00000000000"
+           first_name:
+              type: "string"
+              example: "uiuihwi78323"
+           last_name:
+              type: "string"
+              example: "ifgygfgfgyiwf"
+responses:
+   201:
+      description: When a driver is successfully registers
+
+   400:
+      description: Fails to Register due to bad request data

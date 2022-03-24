@@ -1,0 +1,16 @@
+End trip
+---
+tags:
+   - Driver
+
+parameters:
+   - in: header
+     name: Authorization
+     required: true
+
+responses:
+   200:
+      description: end current trip
+
+   401:
+      description: Fails to get items due to authentication error

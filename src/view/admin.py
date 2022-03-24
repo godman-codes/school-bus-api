@@ -1,8 +1,8 @@
-from tkinter import N
 from flask import jsonify, request, Blueprint
 from werkzeug.security import generate_password_hash
 import validators
 from src.constants.http_status_codes import HTTP_200_OK, HTTP_201_CREATED, HTTP_302_FOUND, HTTP_400_BAD_REQUEST, HTTP_404_NOT_FOUND
+from src.models.admin import School
 from src.models.notifications import Notification
 from src.models.parent import Parent
 from src.models.child import Child
@@ -13,11 +13,30 @@ from src.helper.parentHelpers import create_username, phoneNumberConverter, stan
 from src.models.routes import Routes
 from src.models.trip import Trip
 from flask_jwt_extended import get_jwt_identity, jwt_required
+from flasgger import swag_from
 
 admin = Blueprint('admin', __name__, url_prefix="/api/v1/admin")
 
+
+@admin.get("/admin_details")
+@jwt_required()
+@swag_from("../docs/admin/admin_details.yml")
+def admin_details():
+   user_id = get_jwt_identity()
+   user = School.query.filter_by(id=user_id).first()
+   return jsonify({
+      'user': {
+         'school_name': user.school_name,
+         'school_location': user.school_location,
+         'school_email': user.school_email,
+         'school_website': user.school_website
+         }
+   }), HTTP_200_OK
+
+
 @admin.post('/register_parent')
 @jwt_required()
+@swag_from("../docs/admin/register_parent.yml")
 def register_parent():   
    first_name = request.json['first_name']
    last_name = request.json['last_name']
@@ -72,7 +91,7 @@ def register_parent():
 
    db.session.add(parent)
    db.session.commit()
-   parent_kid_help = Parent.query.filter_by(parent_phone=parent_phone, parent_email=parent_email).all
+   # parent_kid_help = Parent.query.filter_by(parent_phone=parent_phone, parent_email=parent_email).all
 
    return jsonify({
       'message': f'Successfully added {last_name} {first_name}',
@@ -87,8 +106,10 @@ def register_parent():
       } 
          }), HTTP_201_CREATED
 
+
 @admin.post('/register_child')
 @jwt_required()
+@swag_from("../docs/admin/register_child.yml")
 def register_child():
    first_name = request.json['first_name']
    last_name = request.json['last_name']
@@ -153,6 +174,7 @@ def register_child():
 
 @admin.post('/register_driver')
 @jwt_required()
+@swag_from("../docs/admin/register_driver.yml")
 def register_driver():
    first_name = request.json['first_name']
    last_name = request.json['last_name']
@@ -221,6 +243,7 @@ def register_driver():
 
 @admin.post('/register_bus')
 @jwt_required()
+@swag_from("../docs/admin/register_bus.yml")
 def register_bus():
    bus_name = request.json['bus_name']
    bus_id = create_username(bus_name[:2], Bus)
@@ -274,8 +297,10 @@ def register_bus():
       }
    }), HTTP_201_CREATED
 
+
 @admin.post('/search_parent')
 @jwt_required()
+@swag_from("../docs/admin/search_parent.yml")
 def search_parent():
    parent = request.json['parent']
 
@@ -301,8 +326,10 @@ def search_parent():
       'parents': dict_parents
    }), HTTP_302_FOUND
 
+
 @admin.post('/search_driver')
 @jwt_required()
+@swag_from("../docs/admin/search_driver.yml")
 def search_driver():
    driver = request.json['driver']
 
@@ -330,6 +357,7 @@ def search_driver():
 
 @admin.post('/search_children')
 @jwt_required()
+@swag_from("../docs/admin/search_children.yml")
 def search_children():
    child = request.json['child_name']
 
@@ -352,8 +380,10 @@ def search_children():
       'child': dict_child
    }), HTTP_302_FOUND
 
+
 @admin.post('/search_bus')
 @jwt_required()
+@swag_from("../docs/admin/search_bus.yml")
 def search_bus():
    bus = request.json['bus']
 
@@ -388,8 +418,10 @@ def search_bus():
       'buses': dict_bus
       }), HTTP_302_FOUND
 
+
 @admin.post('/register_routes')
 @jwt_required()
+@swag_from("../docs/admin/register_routes.yml")
 def register_routes():
    routes_path = request.json['routes_path']
    expected_time = request.json['expected_time']
@@ -419,8 +451,10 @@ def register_routes():
       }
    }), HTTP_201_CREATED
 
+
 @admin.post('/register_trip')
 @jwt_required()
+@swag_from("../docs/admin/register_trip.yml")
 def register_trip():
    routes = request.json['routes']
    bus_id = request.json['bus_id']
@@ -462,6 +496,7 @@ def register_trip():
 
 @admin.get('/get_active_trips')
 @jwt_required()
+@swag_from("../docs/admin/get_active_trips.yml")
 def get_active_trips():   
    trips = Trip.query.all()
    active_trips = {}
@@ -474,10 +509,12 @@ def get_active_trips():
                            'bus_id': i.bus_id,
                            'last_update_timestamp': i.last_update_timestamp}
    if active_trips:
-      return jsonify(active_trips)
+      return jsonify(active_trips), HTTP_200_OK
+
 
 @admin.get('/get_notifications')
 @jwt_required()
+@swag_from("../docs/admin/get_notifications.yml")
 def get_notification():
    notifications = Notification.query.all()
    if notifications is None:
@@ -492,8 +529,10 @@ def get_notification():
       }
    return jsonify(notify), HTTP_302_FOUND
 
+
 @admin.get('/get_trip/<int:id>')
 @jwt_required()
+@swag_from("../docs/admin/get_trip.yml")
 def get_child_trip(id):
    trip = Trip.query.filter_by(id=id).first()
    bus = Bus.query.filter_by(bus_id=trip.bus_id).first()

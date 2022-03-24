@@ -1,0 +1,16 @@
+GET parent details
+---
+tags:
+   - Parent
+
+parameters:
+   - in: header
+     name: Authorization
+     required: true
+
+responses:
+   200:
+      description: Parent details
+
+   401:
+      description: Fails to get items due to authentication error

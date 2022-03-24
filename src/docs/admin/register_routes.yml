@@ -1,0 +1,27 @@
+Routes Registration
+---
+tags:
+   - Registration
+parameters:
+   - name: body
+     description: The body should contain the trip's Registration data
+     in: body
+     required: true
+     schema:
+        type: object
+        required:
+           - "routes_path"
+           - "expected_time"
+        properties:
+           routes_path:
+              type: "string"
+              example: "uvducwdc"
+           expected_time:
+              type: "string"
+              example: "efeg3"
+responses:
+   201:
+      description: When a driver is successfully registers
+
+   400:
+      description: Fails to Register due to bad request data

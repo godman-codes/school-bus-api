@@ -1,0 +1,16 @@
+GET active trips
+---
+tags:
+   - Admin
+
+parameters:
+   - in: header
+     name: Authorization
+     required: true
+
+responses:
+   200:
+      description: trips that are currently active
+
+   401:
+      description: Fails to get items due to authentication error

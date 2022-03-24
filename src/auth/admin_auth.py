@@ -1,15 +1,16 @@
 from src.constants.http_status_codes import HTTP_200_OK, HTTP_201_CREATED, HTTP_400_BAD_REQUEST, HTTP_401_UNAUTHORIZED
 from flask import Blueprint, jsonify, request
 import validators
-from src.models import admin
 from src.models.admin import School
 from werkzeug.security import check_password_hash, generate_password_hash
 from src.models import db
 from flask_jwt_extended import create_access_token, create_refresh_token, jwt_required, get_jwt_identity
+from flasgger import swag_from
 
 admin_auth = Blueprint('admin_auth', __name__, url_prefix="/api/v1/admin_auth")
 
 @admin_auth.post('/register_school')
+@swag_from("../docs/admin_auth/register_school.yml")
 def register_school():
 
    school_name = request.json['school_name']
@@ -79,6 +80,7 @@ def register_school():
 
 
 @admin_auth.post('/login_admin')
+@swag_from("../docs/admin_auth/login.yml")
 def login_admin():
    school_admin_id = request.json['admin_id']
    password = request.json['password']
@@ -105,20 +107,6 @@ def login_admin():
 
    return jsonify({'error': 'Wrong credentials'}), HTTP_401_UNAUTHORIZED
 
-@admin_auth.get("/admin_details")
-@jwt_required()
-def admin_details():
-   user_id = get_jwt_identity()
-   user = School.query.filter_by(id=user_id).first()
-   return jsonify({
-      'user': {
-         'school_name': user.school_name,
-         'school_location': user.school_location,
-         'school_email': user.school_email,
-         'school_website': user.school_website
-         }
-   }), HTTP_200_OK
-
 
 @admin_auth.get('/token/refresh')
 @jwt_required(refresh=True)
@@ -131,6 +119,7 @@ def refresh_users_token():
 
 @admin_auth.put('/change_password')
 @jwt_required()
+@swag_from("../docs/admin_auth/change_password.yml")
 def change_password():
    admin_id = get_jwt_identity()
    old_password = request.json['old_password']

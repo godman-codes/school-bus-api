@@ -1,0 +1,16 @@
+GET Driver details
+---
+tags:
+   - Driver
+
+parameters:
+   - in: header
+     name: Authorization
+     required: true
+
+responses:
+   200:
+      description: Driver details
+
+   401:
+      description: Fails to get items due to authentication error

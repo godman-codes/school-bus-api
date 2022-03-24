@@ -1,0 +1,16 @@
+GET school details
+---
+tags:
+   - Admin
+
+parameters:
+   - in: header
+     name: Authorization
+     required: true
+
+responses:
+   200:
+      description: school details
+
+   401:
+      description: Fails to get items due to authentication error
