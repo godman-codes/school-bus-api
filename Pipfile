@@ -9,6 +9,7 @@ python-dotenv = "*"
 flask-sqlalchemy = "*"
 validators = "*"
 flask-jwt-extended = "*"
+flasgger = "*"
 
 [dev-packages]
 
