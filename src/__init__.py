@@ -29,7 +29,11 @@ def create_app(test_config=None):
          }
       )
    else:
-      app.config.from_mapping(test_config)
+      app.config.from_mapping(
+         SECRET_KEY=os.environ.get('SECRET_KEY'),
+         SQLALCHEMY_DATABASE_URI=os.environ.get('SQLALCHEMY_DB_URI'),
+         TESTING=True
+      )
 
 
    
