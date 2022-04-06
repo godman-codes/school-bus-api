@@ -23,4 +23,4 @@ class Bus(db.Model):
       return self.is_active
       
    def __repr__(self) -> str:
-      return f'Bus>> {self.bus_number}'
+      return f'Bus>> {self.bus_id}'

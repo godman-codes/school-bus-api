@@ -126,6 +126,61 @@ def get_child_trip(id):
       }
    }), HTTP_302_FOUND
 
+@parent.get('/get_children_trip')
+@jwt_required()
+def get_children_trip():
+   current_user = get_jwt_identity()
+   children = Child.query.filter_by(child_parent=current_user).all()
+   if children is None:
+      return jsonify({'error': 'No children'}), HTTP_400_BAD_REQUEST
+   trip = Trip.query.all()
+   bus = Bus.query.all()
+   driver = Driver.query.all()
+   kids = []
+   for i in children:
+      trips = []
+      buses = []
+      drivers = []
+      for j in trip:
+         if j.routes == i.child_routes:
+            trips.append({
+               'id': j.id, 
+               'routes': j.routes,
+               'bus_id': j.bus_id,
+               'date': j.date
+            })
+      for t in trips:
+         for p in bus:
+            if p.bus_id == t['bus_id']:
+               buses.append({
+                  'trip_id': t['id'],
+                  'bus_name': p.bus_name,
+                  'plate_number': p.plate_number,
+                  'active': p.is_active,
+                  'bus_driver': p.bus_driver
+               })
+      for b in buses:
+         for d in driver:
+            if d.id == b['bus_driver']:
+               drivers.append({
+                  'trip_id': b['trip_id'],
+                  'first_name': f'Mr {d.first_name}',
+                  'driver_phone': d.driver_phone
+               })
+      kids.append({
+         'id': i.id,
+         'first_name': i.first_name,
+         'trip': trips,
+         'bus': buses,
+         'driver': drivers
+         
+      })
+   return jsonify({
+      'message': 'success',
+      'children': kids
+      }), HTTP_302_FOUND
+      
+   
 
 @parent.get('/get_notifications')
 @jwt_required()

@@ -10,6 +10,7 @@ flask-sqlalchemy = "*"
 validators = "*"
 flask-jwt-extended = "*"
 flasgger = "*"
+flask-cors = "*"
 
 [dev-packages]
 

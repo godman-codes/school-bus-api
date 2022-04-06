@@ -7,9 +7,9 @@ from src.view.admin import admin
 from src.auth.parent import parent
 from src.view.driver import driver
 from flask_jwt_extended import JWTManager
-from flasgger import swag_from, Swagger
-from src.config.swagger import template, swagger_config
-
+from flasgger import Swagger
+from src.configur.swagger import template, swagger_config
+from flask_cors import CORS
 
 
 def create_app(test_config=None):
@@ -37,6 +37,7 @@ def create_app(test_config=None):
 
 
    
+   CORS(app, supports_credentials=True)
    db.app=app
    db.init_app(app)
    JWTManager(app)

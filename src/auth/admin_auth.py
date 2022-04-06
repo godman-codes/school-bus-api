@@ -82,8 +82,9 @@ def register_school():
 @admin_auth.post('/login_admin')
 @swag_from("../docs/admin_auth/login.yml")
 def login_admin():
-   school_admin_id = request.json['admin_id']
-   password = request.json['password']
+   body = request.get_json('data')
+   school_admin_id = body['admin_id']
+   password = body['password']
 
    user = School.query.filter_by(school_admin_id=school_admin_id).first()
 

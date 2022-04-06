@@ -34,7 +34,7 @@ def admin_details():
    }), HTTP_200_OK
 
 
-@admin.post('/register_parent')
+@admin.post('/register_parent') 
 @jwt_required()
 @swag_from("../docs/admin/register_parent.yml")
 def register_parent():   
@@ -137,7 +137,7 @@ def register_child():
    routes = Routes.query.filter_by(id=child_routes).first()
 
    if parent is None:
-      return jsonify({'error': 'username belongs to no parent'})
+      return jsonify({'error': 'child belongs to no parent'})
 
    if routes is None:
       return jsonify({'error': 'Route does not exist'})
@@ -207,6 +207,9 @@ def register_driver():
    else:
       if Driver.query.filter_by(driver_phone=driver_phone).first() is not None:
          return jsonify({'error': 'This phone number already exists'}), HTTP_400_BAD_REQUEST
+      
+   if Driver.query.filter_by(driver_email=driver_email).first() is not None:
+      return jsonify({'error': 'Email already exists'}), HTTP_400_BAD_REQUEST
 
    if len(password) < 6:
       return jsonify({'error': 'password is too short'}), HTTP_400_BAD_REQUEST
@@ -257,8 +260,10 @@ def register_bus():
    if not bus_name or len(bus_name) < 2:
       return jsonify({'error': 'Enter a valid Bus Name'}), HTTP_400_BAD_REQUEST
 
-   if not capacity or int(capacity) != capacity:
-      return jsonify({'error': 'error enter a valid capacity'}), HTTP_400_BAD_REQUEST
+   # if not capacity or int(capacity) != capacity:
+   #    return jsonify({'error': 'error enter a valid capacity'}), HTTP_400_BAD_REQUEST
+   if capacity == "":
+      return jsonify({'error': 'Enter a valid capacity'}), HTTP_400_BAD_REQUEST
 
    if len(plate_number) != 8:
       return jsonify({'error': 'enter a valid plate_number'}), HTTP_400_BAD_REQUEST
@@ -273,7 +278,6 @@ def register_bus():
    
    if driver is None:
       return jsonify({'error': 'driver does not exist'}), HTTP_400_BAD_REQUEST
-   print('man')
 
    bus = Bus(
       bus_name=bus_name,
@@ -499,17 +503,24 @@ def register_trip():
 @swag_from("../docs/admin/get_active_trips.yml")
 def get_active_trips():   
    trips = Trip.query.all()
-   active_trips = {}
+   active_trips = []
    for i in trips:
       if i.start_timestamp != None and i.end_timestamp == None:
-         active_trips[i.id] = {'date': i.date,
-                           'start_timestamp': i.start_timestamp,
-                           'end_timestamp': i.end_timestamp,
-                           'latest_gps': i.latest_gps,
-                           'bus_id': i.bus_id,
-                           'last_update_timestamp': i.last_update_timestamp}
+         active_trips.append({
+            'id': i.id,
+            'date': i.date,
+            'start_timestamp': i.start_timestamp,
+            'end_timestamp': i.end_timestamp,
+            'latest_gps': i.latest_gps,
+            'bus_id': i.bus_id,
+            'last_update_timestamp': i.last_update_timestamp})
    if active_trips:
-      return jsonify(active_trips), HTTP_200_OK
+      return jsonify({
+         'message': 'success',
+         'active_trips': active_trips
+         }), HTTP_200_OK
+   else:
+      return jsonify({'error': 'no active trips'}), HTTP_404_NOT_FOUND
 
 
 @admin.get('/get_notifications')
@@ -555,3 +566,102 @@ def get_child_trip(id):
          }
       }
    }), HTTP_302_FOUND
+
+@admin.get('/parents_log')
+@jwt_required()
+def parent_log():
+   parents = Parent.query.all()
+   if parents is None:
+      return jsonify({'error': 'No parents yet'}), HTTP_404_NOT_FOUND
+   else:
+      parent = []
+      for i in parents:
+         parent.append({
+            'id': i.id,
+            'first_name': i.first_name,
+            'last_name': i.last_name,
+            'username': i.username,
+            'phone': i.parent_phone,
+            'email': i.parent_email,
+         })
+      return jsonify({
+         'message': 'successful',
+         'parents': parent
+         }), HTTP_200_OK
+
+@admin.get('/drivers_log')
+@jwt_required()
+def driver_log():
+   drivers = Driver.query.all()
+   bus = Bus.query.all()
+   if drivers is None:
+      return jsonify({'error': 'No drivers yet'}), HTTP_404_NOT_FOUND
+   else:
+      driver = []
+      for i in drivers:
+         driver_bus = []
+         for j in bus:
+            if j.bus_driver == i.id:
+               driver_bus.append(j.plate_number)
+         driver.append({
+            'id': i.id,
+            'first_name': i.first_name,
+            'last_name': i.last_name,
+            'username': i.driver_id,
+            'phone': i.driver_phone,
+            'email': i.driver_email,
+            'bus': driver_bus
+         })
+      return jsonify({
+         'message': 'successful',
+         'drivers': driver
+         }), HTTP_200_OK
+
+
+@admin.get('/children_log')
+@jwt_required()
+def children_log():
+   childrens = Child.query.all()
+   if childrens is None:
+      return jsonify({'error': 'No children yet'}), HTTP_404_NOT_FOUND
+   else:
+      children = []
+      for i in childrens:
+         children.append({
+            'id': i.id,
+            'first_name': i.first_name,
+            'last_name': i.last_name,
+            'class': i.child_class,
+            'parent': i.child_parent,
+            'route': i.child_routes,
+         })
+      return jsonify({
+         'message': 'successful',
+         'children': children
+         }), HTTP_200_OK
+
+
+
+@admin.get('/bus_log')
+@jwt_required()
+def bus_log():
+   Buses = Bus.query.all()
+   if Buses is None:
+      return jsonify({'error': 'No bus yet'}), HTTP_404_NOT_FOUND
+   else:
+      bus = []
+      for i in Buses:
+         bus.append( {
+         'id': i.id,
+         'make': i.bus_name,
+         'plate_number': i.plate_number,
+         'capacity': i.capacity,
+         'current_location': i.current_location,
+         'initial_attendance': i.initial_attendance,
+         'active': i.is_active,
+         'driver': i.bus_driver
+      })
+      return jsonify({
+         'message': 'successful',
+         'buses': bus
+         }), HTTP_200_OK

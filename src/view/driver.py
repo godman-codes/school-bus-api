@@ -18,9 +18,10 @@ driver = Blueprint('driver', __name__, url_prefix="/api/v1/driver")
 @driver.post('/login_driver')
 @swag_from("../docs/driver/login_driver.yml")
 def login_driver():
+   body = request.get_json('data')
 
-   driver_id = request.json['driver_id']
-   password = request.json['password']
+   driver_id = body['driver_id']
+   password = body['password']
 
    drivers = Driver.query.filter_by(driver_id=driver_id).first()
    
