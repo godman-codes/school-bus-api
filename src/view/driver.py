@@ -38,11 +38,11 @@ def login_driver():
             'driver': {
                'access': access,
                'refresh': refresh,
-         'first_name': drivers.first_name,
-         'last_name': drivers.last_name,
-         'driver_id': drivers.driver_id,
-         'driver_email': drivers.driver_email,
-         'driver_phone': drivers.driver_phone
+               'first_name': drivers.first_name,
+               'last_name': drivers.last_name,
+               'driver_id': drivers.driver_id,
+               'driver_email': drivers.driver_email,
+               'driver_phone': drivers.driver_phone
          }
          }), HTTP_200_OK
          
@@ -87,20 +87,43 @@ def get_trips():
       trips = Trip.query.filter_by(bus_id=drivers_bus.bus_id).first()
       if trips:
          return jsonify({
+            'message': 'trips found',
             'trip': {
+               'id': trips.id,
                'routes': f'Route {trips.routes}',
-         'bus_id': trips.bus_id,
-         'date': trips.date,
-         'start_time_stamp': trips.start_timestamp,
-         'end_time_stamp': trips.end_timestamp,
-         'latest_gps': trips.latest_gps,
-         'last_update_timestamp': trips.last_update_timestamp
+               'bus_id': trips.bus_id,
+               'date': trips.date,
+               'start_time_stamp': trips.start_timestamp,
+               'end_time_stamp': trips.end_timestamp,
+               'latest_gps': trips.latest_gps,
+               'last_update_timestamp': trips.last_update_timestamp
             }
          }), HTTP_302_FOUND
       else:
-         return jsonify({'message': 'you have no trips contact admin for more info'}), HTTP_400_BAD_REQUEST
+         return jsonify({'error': 'you have no trips contact admin for more info'}), HTTP_400_BAD_REQUEST
    else:
-      return jsonify({'message': 'there is no bus assigned to you contact admin for more details'}), HTTP_400_BAD_REQUEST
+      return jsonify({'error': 'there is no bus assigned to you contact admin for more details'}), HTTP_400_BAD_REQUEST
+
+@driver.get('/get_trip/<int:id>')
+@jwt_required()
+def get_trip(id):
+   trip = Trip.query.filter_by(id=id).first()
+   if trip:
+      return jsonify({
+         'message': 'trip found',
+         'trip': {
+               'id': trip.id,
+               'routes': f'Route {trip.routes}',
+               'bus_id': trip.bus_id,
+               'date': trip.date,
+               'start_time_stamp': trip.start_timestamp,
+               'end_time_stamp': trip.end_timestamp,
+               'latest_gps': trip.latest_gps,
+               'last_update_timestamp': trip.last_update_timestamp
+            }
+         }), HTTP_302_FOUND
+   else:
+      return jsonify({'error': 'no trip found'}), HTTP_404_NOT_FOUND
 
 
 @driver.get("/driver_detail")
@@ -360,4 +383,36 @@ def end_trip():
       }
       }), HTTP_200_OK   
 
-
+@driver.get('/get_attendance')
+@jwt_required()
+def get_attendance():
+   drivers = get_jwt_identity()
+   bus = Bus.query.filter_by(bus_driver=drivers).first()
+   if bus is None:
+      return jsonify({
+         'error': 'you are not a driver'
+      }), HTTP_400_BAD_REQUEST
+   trip = Trip.query.filter_by(bus_id=bus.bus_id).first()
+   if trip is None:
+      return jsonify({
+         'error': 'you have not started a trip'
+      }), HTTP_400_BAD_REQUEST
+   attendance = Attendance.query.filter_by(trip_id=trip.id).all()
+   if attendance is None:
+      return jsonify({
+         'error': 'you have not picked any children'
+      }), HTTP_400_BAD_REQUEST
+   else:
+      attend = []
+      for i in attendance:
+         attend.append({
+            'id': i.id,
+            'child_name': Child.query.filter_by(id=i.child_id).first().last_name,
+            'child_id': i.child_id,
+            'is_picked': i.is_pick_present,
+            'is_dropped': i.is_drop_present,
+         })
+   return jsonify({
+      'message': 'all attendance',
+      'attendance': attend
+   }), HTTP_200_OK
