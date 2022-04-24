@@ -112,7 +112,7 @@ def get_scheduled_trips():
 
    if drivers_bus:
       trips = ScheduledTrip.query.filter_by(bus_id=drivers_bus.bus_id).all()
-      if trips is None:
+      if len(trips) < 1:
          return jsonify({'error': 'You have no scheduled trips'}), HTTP_404_NOT_FOUND
       schedule_trips = []
       for i in trips:
@@ -185,14 +185,14 @@ def refresh_users_token():
 @driver.post('/start_trip/<int:id>')
 @jwt_required()
 def start_trip(id):
-   # current_user = get_jwt_identity()
+   current_user = get_jwt_identity()
    # drivers = Bus.query.filter_by(bus_driver=current_user).first()
    # if drivers is None:
    #    return jsonify({'error': 'unauthorized'}), HTTP_400_BAD_REQUEST
    trip = ScheduledTrip.query.filter_by(id=id).first()
    if trip is None:
       return jsonify({'error': 'no scheduled trip found with this id or trip has already been started'}), HTTP_404_NOT_FOUND
-   bus = Bus.query.filter_by(bus_id=trip.bus_id).first()
+   bus = Bus.query.filter_by(bus_id=trip.bus_id, bus_driver=current_user).first()
    if bus is None:
       return jsonify({'error': 'no bus found with this id'}), HTTP_404_NOT_FOUND
    gps = Location.query.filter_by(trip_id=trip.id).first()
@@ -357,7 +357,7 @@ def child_picked_attendance(id):
    return jsonify({'message': 'picked attendance taken'}), HTTP_200_OK
 
 
-@driver.put('/child_drop_attendance/<int:id>')
+@driver.put('/child_dropped_attendance/<int:id>')
 @jwt_required()
 @swag_from("../docs/driver/child_drop_attendance.yml")
 def child_drop_attendance(id):
@@ -409,7 +409,6 @@ def end_trip(id):
    attendance = Attendance.query.filter_by(trip_id=trip.id).all()
    current_time = datetime.now()
    completed_trip = CompletedTrip(
-      id=trip.id,
       date = trip.date,
       start_timestamp = trip.start_timestamp,
       end_timestamp = current_time,
@@ -454,9 +453,9 @@ def get_trip_attendance(id):
          'error': 'you have not started a trip'
       }), HTTP_400_BAD_REQUEST
    attendance = Attendance.query.filter_by(trip_id=id).all()
-   if attendance is None:
+   if len(attendance) == 0:
       return jsonify({
-         'error': 'you have not picked any children or the attendance has not been submitted'
+         'error': 'you have not picked any children yet'
       }), HTTP_400_BAD_REQUEST
    else:
       attend = []

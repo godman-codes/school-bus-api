@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify
-from src.constants.http_status_codes import HTTP_200_OK, HTTP_302_FOUND, HTTP_400_BAD_REQUEST, HTTP_401_UNAUTHORIZED
+from src.constants.http_status_codes import HTTP_200_OK, HTTP_302_FOUND, HTTP_400_BAD_REQUEST, HTTP_401_UNAUTHORIZED, HTTP_404_NOT_FOUND
 from src.models import db
 from src.models.bus import Bus
 from src.models.driver import Driver
@@ -127,6 +127,37 @@ def get_children_Completed_trip(id):
       }
    }), HTTP_302_FOUND
 
+@parent.get('/get_scheduled_child_trip/<int:id>')
+@jwt_required()
+def get_scheduled_child_trip(id):
+   current_user = get_jwt_identity()
+   children = Child.query.filter_by(child_parent=current_user).first()
+   if children is None:
+      return jsonify({'error': 'No children'}), HTTP_404_NOT_FOUND
+   trip = ActiveTrip.query.filter_by(id=id).first()
+   if trip is None:
+      return({'error': 'You can\'t track trip because it is not yet active'}), HTTP_400_BAD_REQUEST
+   bus = Bus.query.filter_by(bus_id=trip.bus_id).first()
+   if bus is None:
+      return jsonify({'error': 'No bus found'}), HTTP_404_NOT_FOUND
+   driver = Driver.query.filter_by(id=bus.bus_driver).first()
+   if driver is None:
+      return jsonify({'error': 'No driver found'}), HTTP_404_NOT_FOUND
+   return jsonify({
+      'message': 'success',
+      'child': {
+         'id': trip.id,
+         'date': trip.date,
+         'start_timestamp': trip.start_timestamp,
+         'latest_gps': trip.latest_gps,
+         'last_updated_timestamp': trip.last_updated_timestamp,
+         'routes': trip.routes,
+         'bus_plate_number': bus.plate_number,
+         'bus_name': bus.bus_name,
+         'driver': f'Mr {driver.last_name}',
+         'driver_phone': driver.driver_phone
+      }
+      }), HTTP_302_FOUND
 
 
 @parent.get('/get_scheduled_children_trip')
@@ -134,16 +165,18 @@ def get_children_Completed_trip(id):
 def get_scheduled_children_trip():
    current_user = get_jwt_identity()
    children = Child.query.filter_by(child_parent=current_user).all()
-   if children is None:
+   if len(children) == 0:
       return jsonify({'error': 'No children'}), HTTP_400_BAD_REQUEST
    trip = ScheduledTrip.query.all()
+   if len(trip) == 0:
+      return jsonify({'error': 'No scheduled trip'}), HTTP_400_BAD_REQUEST
    kids = []
    for i in children:
       trips = []
       for j in trip:
          if j.routes == i.child_routes:
             trips.append({
-               'id': j.id, 
+               'id': j.id,
                'routes': j.routes,
                'bus_id': j.bus_id,
                'date': j.date
@@ -173,6 +206,8 @@ def get_children_active_trip(id):
    attendances = Attendance.query.filter_by(child_id=id).first()
    if attendances is None:
       return jsonify({'error': 'child is not on any ongoing trip'}), HTTP_400_BAD_REQUEST
+   if attendances.is_pick_present == True and attendances.is_drop_present == True:
+      return jsonify({'error': 'child has completed the trip'}), HTTP_400_BAD_REQUEST
    trip = ActiveTrip.query.filter_by(id=attendances.trip_id).first()
    bus = Bus.query.filter_by(bus_id=trip.bus_id).first()
    driver = Driver.query.filter_by(id=bus.bus_driver).first()
