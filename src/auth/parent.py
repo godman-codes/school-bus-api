@@ -6,9 +6,10 @@ from src.models.driver import Driver
 from src.models.notifications import Notification
 from src.models.parent import Parent
 from src.models.child import Child
+from src.models.attendance import Attendance
 from werkzeug.security import check_password_hash, generate_password_hash
 from flask_jwt_extended import create_access_token, create_refresh_token, get_jwt_identity, jwt_required
-from src.models.trip import Trip
+from src.models.trip import ActiveTrip, CompletedTrip, ScheduledTrip
 from flasgger import swag_from
 
 parent = Blueprint('parent', __name__, url_prefix='/api/v1/parent')
@@ -98,13 +99,13 @@ def change_password():
    return jsonify({'error': 'password is invalid'}), HTTP_401_UNAUTHORIZED
 
 
-@parent.get('/get_child_trip/<int:id>')
+@parent.get('/get_children_Completed_trip/<int:id>')
 @jwt_required()
 @swag_from("../docs/parent/get_child_trip.yml")
-def get_child_trip(id):
+def get_children_Completed_trip(id):
    current_user = get_jwt_identity()
    child = Child.query.filter_by(child_parent=current_user, id=id).first()
-   trip = Trip.query.filter_by(routes=child.child_routes).first()
+   trip = CompletedTrip.query.filter_by(routes=child.child_routes).first()
    bus = Bus.query.filter_by(bus_id=trip.bus_id).first()
    driver = Driver.query.filter_by(id=bus.bus_driver).first()
    return jsonify({
@@ -126,21 +127,19 @@ def get_child_trip(id):
       }
    }), HTTP_302_FOUND
 
-@parent.get('/get_children_trip')
+
+
+@parent.get('/get_scheduled_children_trip')
 @jwt_required()
-def get_children_trip():
+def get_scheduled_children_trip():
    current_user = get_jwt_identity()
    children = Child.query.filter_by(child_parent=current_user).all()
    if children is None:
       return jsonify({'error': 'No children'}), HTTP_400_BAD_REQUEST
-   trip = Trip.query.all()
-   bus = Bus.query.all()
-   driver = Driver.query.all()
+   trip = ScheduledTrip.query.all()
    kids = []
    for i in children:
       trips = []
-      buses = []
-      drivers = []
       for j in trip:
          if j.routes == i.child_routes:
             trips.append({
@@ -149,38 +148,42 @@ def get_children_trip():
                'bus_id': j.bus_id,
                'date': j.date
             })
-      for t in trips:
-         for p in bus:
-            if p.bus_id == t['bus_id']:
-               buses.append({
-                  'trip_id': t['id'],
-                  'bus_name': p.bus_name,
-                  'plate_number': p.plate_number,
-                  'active': p.is_active,
-                  'bus_driver': p.bus_driver
-               })
-      for b in buses:
-         for d in driver:
-            if d.id == b['bus_driver']:
-               drivers.append({
-                  'trip_id': b['trip_id'],
-                  'first_name': f'Mr {d.first_name}',
-                  'driver_phone': d.driver_phone
-               })
       kids.append({
          'id': i.id,
          'first_name': i.first_name,
-         'trip': trips,
-         'bus': buses,
-         'driver': drivers
+         'scheduled_trip': trips,
          
       })
    return jsonify({
       'message': 'success',
       'children': kids
       }), HTTP_302_FOUND
-      
-   
+
+
+@parent.get('/get_child_active_trip/<int:id>')
+@jwt_required()
+def get_children_active_trip(id):
+   """
+   passing the child id to get the active trip from the attendance table
+   """
+   current_user = get_jwt_identity()
+   child = Child.query.filter_by(id=id, child_parent=current_user).first()
+   if child is None:
+      return jsonify({'error': 'you are not authorized to view child details'}), HTTP_400_BAD_REQUEST
+   attendances = Attendance.query.filter_by(child_id=id).first()
+   if attendances is None:
+      return jsonify({'error': 'child is not on any ongoing trip'}), HTTP_400_BAD_REQUEST
+   trip = ActiveTrip.query.filter_by(id=attendances.trip_id).first()
+   bus = Bus.query.filter_by(bus_id=trip.bus_id).first()
+   driver = Driver.query.filter_by(id=bus.bus_driver).first()
+   return jsonify({
+      'id': trip.id,
+      'bus_name': bus.bus_name,
+      'plate_number': bus.plate_number,
+      'is_active': bus.is_active,
+      'driver': f'Mr {driver.first_name}',
+      'driver_phone': driver.driver_phone
+      }), HTTP_302_FOUND
 
 @parent.get('/get_notifications')
 @jwt_required()
@@ -205,8 +208,64 @@ def get_notification():
 #    notification = Notification.query.filter_by(id=id, parent=current_user).first()
 #    if not notification:
 #       return jsonify({
-#          'error': 'nottification not found'
+#          'error': 'notification not found'
 #       }), HTTP_404_NOT_FOUND
 #    db.session.delete(notification)
 #    db.session.commit()
 #    return jsonify({'message': 'deleted'}), HTTP_204_NO_CONTENT
+
+
+
+# @parent.get('/get_children_trip')
+# @jwt_required()
+# def get_children_trip():
+#    current_user = get_jwt_identity()
+#    children = Child.query.filter_by(child_parent=current_user).all()
+#    if children is None:
+#       return jsonify({'error': 'No children'}), HTTP_400_BAD_REQUEST
+#    trip = Trip.query.all()
+#    bus = Bus.query.all()
+#    driver = Driver.query.all()
+#    kids = []
+#    for i in children:
+#       trips = []
+#       buses = []
+#       drivers = []
+#       for j in trip:
+#          if j.routes == i.child_routes:
+#             trips.append({
+#                'id': j.id, 
+#                'routes': j.routes,
+#                'bus_id': j.bus_id,
+#                'date': j.date
+#             })
+#       for t in trips:
+#          for p in bus:
+#             if p.bus_id == t['bus_id']:
+#                buses.append({
+#                   'trip_id': t['id'],
+#                   'bus_name': p.bus_name,
+#                   'plate_number': p.plate_number,
+#                   'active': p.is_active,
+#                   'bus_driver': p.bus_driver
+#                })
+#       for b in buses:
+#          for d in driver:
+#             if d.id == b['bus_driver']:
+#                drivers.append({
+#                   'trip_id': b['trip_id'],
+#                   'first_name': f'Mr {d.first_name}',
+#                   'driver_phone': d.driver_phone
+#                })
+#       kids.append({
+#          'id': i.id,
+#          'first_name': i.first_name,
+#          'trip': trips,
+#          'bus': buses,
+#          'driver': drivers
+         
+#       })
+#    return jsonify({
+#       'message': 'success',
+#       'children': kids
+#       }), HTTP_302_FOUND

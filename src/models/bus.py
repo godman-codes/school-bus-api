@@ -1,16 +1,17 @@
 from src.models import db
-from src.models.trip import Trip
+from src.models.trip import ScheduledTrip, ActiveTrip
 class Bus(db.Model):
    id = db.Column(db.Integer, primary_key=True)
    bus_name = db.Column(db.String, nullable=False)
    plate_number = db.Column(db.String, unique=True, nullable=False)
    bus_id = db.Column(db.String, nullable=False, unique=True)
    capacity = db.Column(db.Integer, nullable=False)
-   current_location = db.Column(db.Text, default='')
    initial_attendance = db.Column(db.Integer, default=0)
    is_active = db.Column(db.Boolean, default=False)
    bus_driver = db.Column(db.Integer, db.ForeignKey('driver.id'))
-   current_trip = db.relationship(Trip, backref='bus')
+   scheduled_trip = db.relationship(ScheduledTrip, backref='bus_scheduled_trip')
+   active_trip = db.relationship(ActiveTrip, backref='bus_active_trip')
+
 
    def activate_bus(self):
       self.is_active = True

@@ -1,3 +1,4 @@
+from datetime import timedelta
 from flask import Flask, jsonify
 import os
 from src.constants.http_status_codes import HTTP_404_NOT_FOUND, HTTP_500_INTERNAL_SERVER_ERROR
@@ -22,6 +23,7 @@ def create_app(test_config=None):
          SQLALCHEMY_DATABASE_URI=os.environ.get('SQLALCHEMY_DB_URI'),
          SQLALCHEMY_TRACK_MODIFICATIONS=False,
          JWT_SECRET_KEY=os.environ.get('JWT_SECRET_KEY'),
+         JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=5),
 
          SWAGGER={
             "title": "School Bus API",

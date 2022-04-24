@@ -11,7 +11,7 @@ from src.models.bus import Bus
 from src.models import db
 from src.helper.parentHelpers import create_username, phoneNumberConverter, standard_query, standard_query_bus
 from src.models.routes import Routes
-from src.models.trip import Trip
+from src.models.trip import ActiveTrip, CompletedTrip, ScheduledTrip
 from flask_jwt_extended import get_jwt_identity, jwt_required
 from flasgger import swag_from
 
@@ -479,7 +479,7 @@ def register_trip():
       return jsonify({'error': 'This bus noes not exist'}), HTTP_400_BAD_REQUEST
 
 
-   trip = Trip(
+   trip = ScheduledTrip(
       routes=routes,
       bus_id=bus_id,
       date=date
@@ -489,7 +489,7 @@ def register_trip():
    db.session.commit()
 
    return jsonify({
-      'message': 'trip initiated successfully',
+      'message': 'trip scheduled successfully',
       'trip': {
          'routes': f'Route {routes}',
          'bus_id': bus_id,
@@ -498,30 +498,69 @@ def register_trip():
    }), HTTP_201_CREATED
 
 
+@admin.get('/get_scheduled_trips')
+@jwt_required()
+def get_scheduled_trips():
+   all_scheduled_trips = ScheduledTrip.query.all()
+   if len(all_scheduled_trips) < 1:
+      return jsonify({'error': 'no scheduled trips'}), HTTP_404_NOT_FOUND
+   scheduled_trips = []
+   for i in all_scheduled_trips:
+      scheduled_trips.append({
+         'scheduled_trip_id': i.id,
+         'routes': i.routes,
+         'bus_id': i.bus_id,
+         'date': i.date
+      })
+
+   return jsonify({
+      'message': 'successful',
+      'scheduled_trips': scheduled_trips
+   }), HTTP_302_FOUND
+
+
 @admin.get('/get_active_trips')
 @jwt_required()
 @swag_from("../docs/admin/get_active_trips.yml")
 def get_active_trips():   
-   trips = Trip.query.all()
+   trips = ActiveTrip.query.all()
+   if len(trips) == 0:
+      return jsonify({'error': 'no active trips'}), HTTP_404_NOT_FOUND
    active_trips = []
    for i in trips:
-      if i.start_timestamp != None and i.end_timestamp == None:
-         active_trips.append({
+      active_trips.append({
             'id': i.id,
             'date': i.date,
             'start_timestamp': i.start_timestamp,
-            'end_timestamp': i.end_timestamp,
             'latest_gps': i.latest_gps,
             'bus_id': i.bus_id,
-            'last_update_timestamp': i.last_update_timestamp})
-   if active_trips:
-      return jsonify({
+            'last_update_timestamp': i.last_update_timestamp
+            })
+   return jsonify({
          'message': 'success',
          'active_trips': active_trips
          }), HTTP_200_OK
-   else:
-      return jsonify({'error': 'no active trips'}), HTTP_404_NOT_FOUND
 
+   
+@admin.get('/get_completed_trips')
+@jwt_required()
+def get_completed_trips():
+   trips = CompletedTrip.query.all()
+   if trips is None:
+      return jsonify({'error': 'no completed trips'}), HTTP_404_NOT_FOUND
+   completed_trips = []
+   for i in trips:
+      completed_trips.append({
+         'id': i.id,
+         'date': i.date,
+         'start_timestamp': i.start_timestamp,
+         'end_timestamp': i.end_timestamp,
+         'latest_gps': i.latest_gps,
+         'bus_id': i.bus_id,
+         'route': i.routes,
+         'last_update_timestamp': i.last_update_timestamp,
+         'attendance' : i.attendance
+         }), HTTP_200_OK
 
 @admin.get('/get_notifications')
 @jwt_required()
@@ -545,7 +584,7 @@ def get_notification():
 @jwt_required()
 @swag_from("../docs/admin/get_trip.yml")
 def get_child_trip(id):
-   trip = Trip.query.filter_by(id=id).first()
+   trip = ActiveTrip.query.filter_by(id=id).first()
    bus = Bus.query.filter_by(bus_id=trip.bus_id).first()
    driver = Driver.query.filter_by(id=bus.bus_driver).first()
    return jsonify({
@@ -656,7 +695,6 @@ def bus_log():
          'make': i.bus_name,
          'plate_number': i.plate_number,
          'capacity': i.capacity,
-         'current_location': i.current_location,
          'initial_attendance': i.initial_attendance,
          'active': i.is_active,
          'driver': i.bus_driver

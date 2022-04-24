@@ -3,7 +3,7 @@ from src.models import db
 from src.models.child import Child
 from datetime import datetime
 
-from src.models.trip import Trip
+from src.models.trip import ActiveTrip
 
 class Attendance(db.Model):
    id = db.Column(db.Integer, primary_key=True)
@@ -14,7 +14,7 @@ class Attendance(db.Model):
    pick_time = db.Column(db.DateTime)
    drop_time = db.Column(db.DateTime)
    child_id = db.Column(db.Integer, db.ForeignKey(Child.id))
-   trip_id = db.Column(db.Integer, db.ForeignKey(Trip.id))
+   trip_id = db.Column(db.Integer, db.ForeignKey(ActiveTrip.id))
 
    def picked(self, gps):
       self.is_pick_present = True
