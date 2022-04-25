@@ -167,11 +167,11 @@ def get_scheduled_children_trip():
    children = Child.query.filter_by(child_parent=current_user).all()
    print('amy')
    if len(children) == 0:
-      return jsonify({'error': 'No children'}), HTTP_400_BAD_REQUEST
+      return jsonify({'error': 'No children'}), HTTP_404_NOT_FOUND
    children_routes = [x.child_routes for x in children]
    trip = ScheduledTrip.query.filter_by(routes=children_routes[0]).all()
    if len(trip) == 0:
-      return jsonify({'error': 'No scheduled trip'}), HTTP_400_BAD_REQUEST
+      return jsonify({'error': 'your child or children have no scheduled trip'}), HTTP_200_OK
    scheduled_trips = []
    for i in trip:
       scheduled_trips.append({
