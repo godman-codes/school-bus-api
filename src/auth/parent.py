@@ -145,7 +145,7 @@ def get_scheduled_child_trip(id):
       return jsonify({'error': 'No driver found'}), HTTP_404_NOT_FOUND
    return jsonify({
       'message': 'success',
-      'child': {
+      'trip': {
          'id': trip.id,
          'date': trip.date,
          'start_timestamp': trip.start_timestamp,
@@ -165,31 +165,26 @@ def get_scheduled_child_trip(id):
 def get_scheduled_children_trip():
    current_user = get_jwt_identity()
    children = Child.query.filter_by(child_parent=current_user).all()
+   print('amy')
    if len(children) == 0:
       return jsonify({'error': 'No children'}), HTTP_400_BAD_REQUEST
-   trip = ScheduledTrip.query.all()
+   children_routes = [x.child_routes for x in children]
+   trip = ScheduledTrip.query.filter_by(routes=children_routes[0]).all()
    if len(trip) == 0:
       return jsonify({'error': 'No scheduled trip'}), HTTP_400_BAD_REQUEST
-   kids = []
-   for i in children:
-      trips = []
-      for j in trip:
-         if j.routes == i.child_routes:
-            trips.append({
-               'id': j.id,
-               'routes': j.routes,
-               'bus_id': j.bus_id,
-               'date': j.date
-            })
-      kids.append({
+   scheduled_trips = []
+   for i in trip:
+      scheduled_trips.append({
          'id': i.id,
-         'first_name': i.first_name,
-         'scheduled_trip': trips,
-         
+         'date': i.date,
+         'start_timestamp': i.start_timestamp,
+         'latest_gps': i.latest_gps,
+         'last_updated_timestamp': i.last_updated_timestamp,
+         'routes': i.routes,
       })
    return jsonify({
       'message': 'success',
-      'children': kids
+      'children_scheduled_trips': scheduled_trips
       }), HTTP_302_FOUND
 
 
