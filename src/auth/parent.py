@@ -36,7 +36,7 @@ def login_parent():
                'username': parent.username,
                'email': parent.parent_email,
                'phone_number': parent.parent_phone,
-               'children': [[x.id, x.first_name, x.last_name] for x in Child.query.filter_by(child_parent=parent.id).all()]
+               'children': [{'id': x.id, 'first_name': x.first_name} for x in Child.query.filter_by(child_parent=parent.id).all()]
             }
          }), HTTP_200_OK
          
